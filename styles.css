@@ -1,0 +1,698 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    line-height: 1.6;
+    color: #333;
+    background-color: #f5f7fa;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+    font-weight: 300;
+}
+
+header h2 {
+    font-size: 1.3rem;
+    font-weight: 400;
+    opacity: 0.9;
+}
+
+/* Progress Indicator */
+.progress-indicator {
+    margin-top: 20px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 10px;
+    background-color: rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #48bb78;
+    width: 0%;
+    border-radius: 5px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    color: white;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.scale-info {
+    background: white;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid #667eea;
+}
+
+.scale-info h3 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.3rem;
+}
+
+.scale-info ul {
+    list-style: none;
+}
+
+.scale-info li {
+    margin-bottom: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.scale-info li:last-child {
+    border-bottom: none;
+}
+
+.scale-info strong {
+    color: #444;
+    display: inline-block;
+    width: 220px;
+}
+
+.patient-info {
+    background: white;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.patient-info h3 {
+    color: #667eea;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+/* Tab System */
+.tabs-container {
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+    overflow: hidden;
+}
+
+.main-tabs {
+    display: flex;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    overflow-x: auto;
+}
+
+.tab-button {
+    flex: 1;
+    padding: 20px 15px;
+    border: none;
+    background: transparent;
+    color: #4a5568;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 3px solid transparent;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 150px;
+}
+
+.tab-button:hover {
+    background: #e2e8f0;
+    color: #2d3748;
+}
+
+.tab-button.active {
+    background: white;
+    color: #667eea;
+    border-bottom-color: #667eea;
+}
+
+.tab-progress {
+    font-size: 12px;
+    background: #e2e8f0;
+    color: #4a5568;
+    padding: 4px 8px;
+    border-radius: 10px;
+    min-width: 40px;
+    text-align: center;
+}
+
+.tab-button.active .tab-progress {
+    background: #667eea;
+    color: white;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.sub-tabs {
+    display: flex;
+    background: #f1f5f9;
+    border-bottom: 1px solid #cbd5e0;
+    overflow-x: auto;
+    padding: 0 20px;
+}
+
+.sub-tab-button {
+    padding: 15px 20px;
+    border: none;
+    background: transparent;
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.sub-tab-button:hover {
+    color: #475569;
+    background: rgba(100, 116, 139, 0.1);
+}
+
+.sub-tab-button.active {
+    color: #667eea;
+    border-bottom-color: #667eea;
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.sub-progress {
+    font-size: 11px;
+    background: #cbd5e0;
+    color: #64748b;
+    padding: 2px 6px;
+    border-radius: 8px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.sub-tab-button.active .sub-progress {
+    background: #667eea;
+    color: white;
+}
+
+.sub-tab-content {
+    display: none;
+    padding: 30px;
+}
+
+.sub-tab-content.active {
+    display: block;
+}
+
+.sub-tab-content h3 {
+    color: #2d3748;
+    margin-bottom: 25px;
+    font-size: 1.4rem;
+    text-align: center;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="tel"],
+.form-group input[type="date"] {
+    width: 100%;
+    max-width: 300px;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input[type="text"]:focus,
+.form-group input[type="email"]:focus,
+.form-group input[type="tel"]:focus,
+.form-group input[type="date"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+
+/* Info Sections */
+.info-section {
+    background: #f8fafc;
+    padding: 20px;
+    margin: 15px 0;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.info-section h4 {
+    color: #667eea;
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+}
+
+.section {
+    background: white;
+    padding: 25px;
+    margin-bottom: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.section h3 {
+    color: #667eea;
+    margin-bottom: 25px;
+    font-size: 1.4rem;
+    text-align: center;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #eee;
+}
+
+.questions-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.question-item {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.question-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.question-number {
+    display: inline-block;
+    background: #667eea;
+    color: white;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 30px;
+    font-weight: bold;
+    margin-right: 15px;
+    font-size: 14px;
+}
+
+.question-text {
+    display: inline-block;
+    vertical-align: top;
+    width: calc(100% - 50px);
+    font-weight: 500;
+    color: #2d3748;
+    margin-bottom: 15px;
+    line-height: 1.4;
+}
+
+.rating-group {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    gap: 15px;
+}
+
+.rating-group label:first-child {
+    font-weight: 600;
+    color: #667eea;
+    min-width: 50px;
+    margin-bottom: 0;
+}
+
+.rating-scale {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.rating-scale input[type="radio"] {
+    display: none;
+}
+
+.rating-scale label {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    border: 2px solid #cbd5e0;
+    border-radius: 50%;
+    cursor: pointer;
+    font-weight: 600;
+    color: #4a5568;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.rating-scale input[type="radio"]:checked + label {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+    transform: scale(1.1);
+}
+
+.rating-scale label:hover {
+    border-color: #667eea;
+    transform: scale(1.05);
+}
+
+.form-actions {
+    text-align: center;
+    margin-top: 40px;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 12px 30px;
+    margin: 0 10px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+}
+
+.btn-secondary {
+    background: #e2e8f0;
+    color: #4a5568;
+    border: 2px solid #cbd5e0;
+}
+
+.btn-secondary:hover {
+    background: #cbd5e0;
+    transform: translateY(-1px);
+}
+
+/* Tab Navigation */
+.tab-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    margin-bottom: 20px;
+}
+
+.nav-button {
+    padding: 10px 20px;
+    border: 2px solid #667eea;
+    background: white;
+    color: #667eea;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.nav-button:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.nav-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.tab-info {
+    text-align: center;
+    flex-grow: 1;
+    margin: 0 20px;
+}
+
+.tab-info span {
+    font-weight: 600;
+    color: #2d3748;
+    font-size: 16px;
+}
+
+.results-section {
+    background: white;
+    padding: 25px;
+    margin-top: 30px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    border-left: 5px solid #48bb78;
+}
+
+.results-section h3 {
+    color: #48bb78;
+    margin-bottom: 20px;
+    font-size: 1.3rem;
+}
+
+.results-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.results-table th,
+.results-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.results-table th {
+    background: #f7fafc;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.results-table tr:hover {
+    background: #f7fafc;
+}
+
+.score-improvement {
+    color: #48bb78;
+    font-weight: bold;
+}
+
+.score-decline {
+    color: #f56565;
+    font-weight: bold;
+}
+
+.score-same {
+    color: #718096;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 2rem;
+    }
+    
+    header h2 {
+        font-size: 1.1rem;
+    }
+    
+    .question-text {
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    .question-number {
+        margin-bottom: 10px;
+    }
+    
+    .rating-group {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .rating-scale {
+        flex-wrap: wrap;
+    }
+    
+    .rating-scale label {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+    }
+    
+    .form-actions {
+        padding: 15px;
+    }
+    
+    .btn-primary,
+    .btn-secondary {
+        margin: 5px;
+        padding: 10px 20px;
+        font-size: 14px;
+    }
+    
+    .scale-info strong {
+        width: 100%;
+        display: block;
+        margin-bottom: 5px;
+    }
+    
+    /* Tab System Mobile */
+    .main-tabs {
+        flex-direction: column;
+    }
+    
+    .tab-button {
+        min-width: auto;
+        flex-direction: row;
+        justify-content: space-between;
+        padding: 15px 20px;
+    }
+    
+    .sub-tabs {
+        flex-direction: column;
+        padding: 0;
+    }
+    
+    .sub-tab-button {
+        justify-content: space-between;
+        padding: 12px 20px;
+    }
+    
+    .sub-tab-content {
+        padding: 20px;
+    }
+    
+    .tab-navigation {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .nav-button {
+        width: 100%;
+        max-width: 200px;
+    }
+    
+    .tab-info {
+        margin: 0;
+        order: -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .patient-info,
+    .section,
+    .scale-info {
+        padding: 15px;
+    }
+    
+    .question-item {
+        padding: 15px;
+    }
+    
+    .rating-group {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .rating-scale {
+        justify-content: center;
+        width: 100%;
+    }
+    
+    /* Additional tab improvements for small screens */
+    .sub-tab-content h3 {
+        font-size: 1.2rem;
+        flex-direction: column;
+        gap: 5px;
+    }
+    
+    .tab-button,
+    .sub-tab-button {
+        font-size: 13px;
+    }
+    
+    .tab-progress,
+    .sub-progress {
+        font-size: 11px;
+        padding: 2px 6px;
+    }
+}

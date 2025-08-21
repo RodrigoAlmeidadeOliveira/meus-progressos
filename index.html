@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Questionário de Avaliação - Habilidades Comunicativas</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Questionário de Avaliação</h1>
+            <h2>Desenvolvimento de Habilidades Comunicativas</h2>
+            <div class="progress-indicator">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="main-progress"></div>
+                </div>
+                <span class="progress-text" id="progress-text">0% Concluído</span>
+            </div>
+        </header>
+
+        <div class="scale-info">
+            <h3>Escala de Pontuação:</h3>
+            <ul>
+                <li><strong>1 - Nunca ou raramente:</strong> De cada 10 situações reage dessa forma sem necessidade de ajuda no máximo 2 vezes</li>
+                <li><strong>2 - Com pouca frequência:</strong> De cada 10 situações desse tipo reage dessa forma sem necessidade de ajuda 3 a 4 vezes</li>
+                <li><strong>3 - Com regular frequência:</strong> De cada 10 situações reage dessa forma sem necessidade de ajuda 4 a 6 vezes</li>
+                <li><strong>4 - Muito frequentemente:</strong> De cada 10 situações reage dessa forma sem necessidade de ajuda 6 a 8 vezes</li>
+                <li><strong>5 - Sempre ou quase sempre:</strong> De cada 10 situações reage dessa forma sem necessidade de ajuda 8 a 10 vezes</li>
+            </ul>
+        </div>
+
+        <form id="questionnaire-form">
+            <!-- Informações da Avaliação -->
+            <div class="patient-info">
+                <h3>Informações da Avaliação</h3>
+                
+                <div class="info-section">
+                    <h4>Dados do Avaliado</h4>
+                    <div class="form-group">
+                        <label for="patient-name">Nome do Avaliado:</label>
+                        <input type="text" id="patient-name" name="patient-name" required>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h4>Dados do Avaliador</h4>
+                    <div class="form-group">
+                        <label for="evaluator-name">Nome do Avaliador:</label>
+                        <input type="text" id="evaluator-name" name="evaluator-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="evaluator-email">Email do Avaliador:</label>
+                        <input type="email" id="evaluator-email" name="evaluator-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="evaluator-phone">Telefone Celular do Avaliador:</label>
+                        <input type="tel" id="evaluator-phone" name="evaluator-phone" pattern="[0-9\s\(\)\-\+]+" placeholder="(11) 99999-9999" required>
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <h4>Data da Avaliação</h4>
+                    <div class="form-group">
+                        <label for="evaluation-date">Data da Avaliação:</label>
+                        <input type="date" id="evaluation-date" name="evaluation-date" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sistema de Abas Principais -->
+            <div class="tabs-container">
+                <div class="main-tabs">
+                    <button type="button" class="tab-button active" data-tab="comunicativas">
+                        🗣️ Habilidades Comunicativas
+                        <span class="tab-progress" id="progress-comunicativas">0/40</span>
+                    </button>
+                    <button type="button" class="tab-button" data-tab="sociais">
+                        👥 Habilidades Sociais
+                        <span class="tab-progress" id="progress-sociais">0/40</span>
+                    </button>
+                    <button type="button" class="tab-button" data-tab="funcionais">
+                        🏠 Habilidades Funcionais
+                        <span class="tab-progress" id="progress-funcionais">0/29</span>
+                    </button>
+                    <button type="button" class="tab-button" data-tab="emocionais">
+                        💭 Habilidades Emocionais
+                        <span class="tab-progress" id="progress-emocionais">0/40</span>
+                    </button>
+                </div>
+
+                <!-- ABA: HABILIDADES COMUNICATIVAS -->
+                <div class="tab-content active" id="tab-comunicativas">
+                    <div class="sub-tabs">
+                        <button type="button" class="sub-tab-button active" data-subtab="contato-visual">
+                            Contato Visual <span class="sub-progress" id="sub-progress-contato-visual">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="comunicacao-alternativa">
+                            Comunicação Alternativa <span class="sub-progress" id="sub-progress-comunicacao-alternativa">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="linguagem-expressiva">
+                            Linguagem Expressiva <span class="sub-progress" id="sub-progress-linguagem-expressiva">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="linguagem-receptiva">
+                            Linguagem Receptiva <span class="sub-progress" id="sub-progress-linguagem-receptiva">0/10</span>
+                        </button>
+                    </div>
+
+                    <div class="sub-tab-content active" id="subtab-contato-visual">
+                        <h3>👁️ Contato Visual</h3>
+                        <div class="questions-grid" id="contato-visual-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-comunicacao-alternativa">
+                        <h3>🤏 Comunicação Alternativa</h3>
+                        <div class="questions-grid" id="comunicacao-alternativa-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-linguagem-expressiva">
+                        <h3>🗨️ Linguagem Expressiva</h3>
+                        <div class="questions-grid" id="linguagem-expressiva-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-linguagem-receptiva">
+                        <h3>👂 Linguagem Receptiva</h3>
+                        <div class="questions-grid" id="linguagem-receptiva-questions"></div>
+                    </div>
+                </div>
+
+                <!-- ABA: HABILIDADES SOCIAIS -->
+                <div class="tab-content" id="tab-sociais">
+                    <div class="sub-tabs">
+                        <button type="button" class="sub-tab-button active" data-subtab="expressao-facial">
+                            Expressão Facial <span class="sub-progress" id="sub-progress-expressao-facial">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="imitacao">
+                            Imitação <span class="sub-progress" id="sub-progress-imitacao">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="atencao-compartilhada">
+                            Atenção Compartilhada <span class="sub-progress" id="sub-progress-atencao-compartilhada">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="brincar">
+                            Brincar <span class="sub-progress" id="sub-progress-brincar">0/10</span>
+                        </button>
+                    </div>
+
+                    <div class="sub-tab-content active" id="subtab-expressao-facial">
+                        <h3>😊 Expressão Facial</h3>
+                        <div class="questions-grid" id="expressao-facial-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-imitacao">
+                        <h3>👯 Imitação</h3>
+                        <div class="questions-grid" id="imitacao-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-atencao-compartilhada">
+                        <h3>🎯 Atenção Compartilhada</h3>
+                        <div class="questions-grid" id="atencao-compartilhada-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-brincar">
+                        <h3>🎮 Brincar</h3>
+                        <div class="questions-grid" id="brincar-questions"></div>
+                    </div>
+                </div>
+
+                <!-- ABA: HABILIDADES FUNCIONAIS -->
+                <div class="tab-content" id="tab-funcionais">
+                    <div class="sub-tabs">
+                        <button type="button" class="sub-tab-button active" data-subtab="auto-cuidado">
+                            Auto Cuidado <span class="sub-progress" id="sub-progress-auto-cuidado">0/9</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="vestir-se">
+                            Vestir-se <span class="sub-progress" id="sub-progress-vestir-se">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="uso-banheiro">
+                            Uso do Banheiro <span class="sub-progress" id="sub-progress-uso-banheiro">0/10</span>
+                        </button>
+                    </div>
+
+                    <div class="sub-tab-content active" id="subtab-auto-cuidado">
+                        <h3>🧼 Auto Cuidado</h3>
+                        <div class="questions-grid" id="auto-cuidado-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-vestir-se">
+                        <h3>👕 Vestir-se</h3>
+                        <div class="questions-grid" id="vestir-se-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-uso-banheiro">
+                        <h3>🚽 Uso do Banheiro</h3>
+                        <div class="questions-grid" id="uso-banheiro-questions"></div>
+                    </div>
+                </div>
+
+                <!-- ABA: HABILIDADES EMOCIONAIS -->
+                <div class="tab-content" id="tab-emocionais">
+                    <div class="sub-tabs">
+                        <button type="button" class="sub-tab-button active" data-subtab="controle-inibitorio">
+                            Controle Inibitório <span class="sub-progress" id="sub-progress-controle-inibitorio">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="flexibilidade">
+                            Flexibilidade <span class="sub-progress" id="sub-progress-flexibilidade">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="resposta-emocional">
+                            Resposta Emocional <span class="sub-progress" id="sub-progress-resposta-emocional">0/10</span>
+                        </button>
+                        <button type="button" class="sub-tab-button" data-subtab="empatia">
+                            Empatia <span class="sub-progress" id="sub-progress-empatia">0/10</span>
+                        </button>
+                    </div>
+
+                    <div class="sub-tab-content active" id="subtab-controle-inibitorio">
+                        <h3>🛑 Controle Inibitório</h3>
+                        <div class="questions-grid" id="controle-inibitorio-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-flexibilidade">
+                        <h3>🔄 Flexibilidade</h3>
+                        <div class="questions-grid" id="flexibilidade-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-resposta-emocional">
+                        <h3>😌 Resposta Emocional</h3>
+                        <div class="questions-grid" id="resposta-emocional-questions"></div>
+                    </div>
+
+                    <div class="sub-tab-content" id="subtab-empatia">
+                        <h3>❤️ Empatia</h3>
+                        <div class="questions-grid" id="empatia-questions"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Navegação entre abas -->
+            <div class="tab-navigation">
+                <button type="button" id="prev-tab" class="nav-button">⬅️ Anterior</button>
+                <div class="tab-info">
+                    <span id="current-tab-info">Habilidades Comunicativas - Contato Visual</span>
+                </div>
+                <button type="button" id="next-tab" class="nav-button">Próximo ➡️</button>
+            </div>
+
+            <!-- Ações do formulário -->
+            <div class="form-actions">
+                <button type="button" id="save-draft" class="btn-secondary">💾 Salvar Rascunho</button>
+                <button type="submit" class="btn-primary" id="submit-evaluation">✅ Finalizar Avaliação</button>
+                <button type="button" id="clear-form" class="btn-secondary">🗑️ Limpar Formulário</button>
+                <button type="button" id="view-results" class="btn-secondary">📊 Ver Resultados</button>
+            </div>
+        </form>
+
+        <!-- Seção de Resultados -->
+        <div id="results-section" class="results-section" style="display: none;">
+            <h3>Análise de Resultados</h3>
+            <div id="results-content"></div>
+            
+            <div class="charts-section">
+                <div class="chart-container full-width">
+                    <h4>Evolução por Questões</h4>
+                    <div class="chart-controls">
+                        <label for="group-selector">Selecionar Grupo:</label>
+                        <select id="group-selector">
+                            <option value="">Selecione um grupo...</option>
+                        </select>
+                    </div>
+                    <canvas id="evolutionChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h4>Comparação entre Avaliações</h4>
+                    <div class="chart-controls">
+                        <label for="comparison-group-selector">Grupo:</label>
+                        <select id="comparison-group-selector">
+                            <option value="">Selecione um grupo...</option>
+                        </select>
+                    </div>
+                    <canvas id="comparisonChart"></canvas>
+                </div>
+                
+                <div class="chart-container">
+                    <h4>Progresso Geral por Categoria</h4>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
