@@ -362,6 +362,7 @@ class QuestionnaireManager {
             <div class="rating-group">
                 <label>Pontuação:</label>
                 <div class="rating-scale">
+                    <div class="scale-label-start">Nunca</div>
                     <input type="radio" id="q${questionNumber}_1" name="q${questionNumber}" value="1">
                     <label for="q${questionNumber}_1">1</label>
                     <input type="radio" id="q${questionNumber}_2" name="q${questionNumber}" value="2">
@@ -372,6 +373,7 @@ class QuestionnaireManager {
                     <label for="q${questionNumber}_4">4</label>
                     <input type="radio" id="q${questionNumber}_5" name="q${questionNumber}" value="5">
                     <label for="q${questionNumber}_5">5</label>
+                    <div class="scale-label-end">Sempre</div>
                 </div>
             </div>
         `;

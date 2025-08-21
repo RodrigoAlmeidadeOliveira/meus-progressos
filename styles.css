@@ -383,6 +383,27 @@ header h2 {
     display: flex;
     gap: 8px;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.scale-label-start,
+.scale-label-end {
+    font-size: 12px;
+    font-weight: 600;
+    color: #667eea;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 8px;
+    white-space: nowrap;
+}
+
+.scale-label-start {
+    color: #f56565;
+}
+
+.scale-label-end {
+    color: #48bb78;
 }
 
 .rating-scale input[type="radio"] {
@@ -590,6 +611,14 @@ header h2 {
     
     .rating-scale {
         flex-wrap: wrap;
+        justify-content: space-between;
+        width: 100%;
+    }
+    
+    .scale-label-start,
+    .scale-label-end {
+        font-size: 11px;
+        padding: 0 4px;
     }
     
     .rating-scale label {
@@ -674,8 +703,15 @@ header h2 {
     }
     
     .rating-scale {
-        justify-content: center;
+        justify-content: space-between;
         width: 100%;
+        gap: 4px;
+    }
+    
+    .scale-label-start,
+    .scale-label-end {
+        font-size: 10px;
+        padding: 0 2px;
     }
     
     /* Additional tab improvements for small screens */
