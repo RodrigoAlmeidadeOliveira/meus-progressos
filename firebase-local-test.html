@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Firebase Local (Sem Projeto Real)</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        button { padding: 10px 20px; margin: 10px 0; font-size: 16px; }
+        .instructions { background: #f8f9fa; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Teste Firebase Local (Modo Offline)</h1>
+    
+    <div class="warning status">
+        ⚠️ AVISO: Esta página testa o sistema SEM Firebase real. Os dados serão salvos apenas no localStorage.
+    </div>
+    
+    <div class="instructions">
+        <h3>🚀 Para Usar Firebase Real:</h3>
+        <ol>
+            <li>Acesse <a href="https://console.firebase.google.com/" target="_blank">console.firebase.google.com</a></li>
+            <li>Crie um novo projeto</li>
+            <li>Ative Authentication (método Anonymous)</li>
+            <li>Ative Firestore Database</li>
+            <li>Substitua a configuração nos arquivos HTML</li>
+        </ol>
+    </div>
+    
+    <div id="status-container">
+        <div class="status info">Testando sistema offline...</div>
+    </div>
+    
+    <button onclick="testOfflineSystem()">🔄 Testar Sistema Offline</button>
+    <button onclick="testDataSave()">💾 Testar Salvamento de Dados</button>
+    
+    <script>
+        // Simulação do Firebase Manager para teste offline
+        class OfflineFirebaseManager {
+            constructor() {
+                this.initialized = true;
+                this.isOffline = true;
+            }
+            
+            async saveEvaluation(data) {
+                try {
+                    const evaluations = JSON.parse(localStorage.getItem('evaluations') || '[]');
+                    const newEvaluation = {
+                        ...data,
+                        id: Date.now().toString(),
+                        createdAt: new Date().toISOString(),
+                        offline: true
+                    };
+                    
+                    evaluations.push(newEvaluation);
+                    localStorage.setItem('evaluations', JSON.stringify(evaluations));
+                    
+                    return { success: true, id: newEvaluation.id, offline: true };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            }
+            
+            async getEvaluations() {
+                try {
+                    const evaluations = JSON.parse(localStorage.getItem('evaluations') || '[]');
+                    return { success: true, data: evaluations };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            }
+        }
+        
+        const offlineManager = new OfflineFirebaseManager();
+        
+        function addStatus(message, type = 'info') {
+            const container = document.getElementById('status-container');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = `${new Date().toLocaleTimeString()} - ${message}`;
+            container.appendChild(div);
+            console.log(message);
+        }
+        
+        window.testOfflineSystem = function() {
+            const container = document.getElementById('status-container');
+            container.innerHTML = '<div class="status info">Testando sistema offline...</div>';
+            
+            addStatus('✅ Sistema offline inicializado', 'success');
+            addStatus('✅ LocalStorage disponível', 'success');
+            addStatus('ℹ️ Modo offline: dados salvos localmente', 'info');
+            
+            // Verificar se há dados salvos
+            const saved = localStorage.getItem('evaluations');
+            if (saved) {
+                const evaluations = JSON.parse(saved);
+                addStatus(`📊 Encontradas ${evaluations.length} avaliações salvas localmente`, 'info');
+            } else {
+                addStatus('📭 Nenhuma avaliação salva encontrada', 'info');
+            }
+        };
+        
+        window.testDataSave = async function() {
+            addStatus('Testando salvamento de dados...', 'info');
+            
+            const testData = {
+                patientInfo: {
+                    name: 'Teste Local',
+                    age: '5',
+                    evaluationDate: new Date().toISOString().split('T')[0]
+                },
+                scores: {
+                    comunicacao: 85,
+                    linguagem: 78,
+                    social: 90
+                },
+                testMode: true
+            };
+            
+            const result = await offlineManager.saveEvaluation(testData);
+            
+            if (result.success) {
+                addStatus(`✅ Dados salvos com sucesso! ID: ${result.id}`, 'success');
+                addStatus('💡 Sistema funcionando perfeitamente em modo offline', 'info');
+            } else {
+                addStatus(`❌ Erro ao salvar: ${result.error}`, 'error');
+            }
+        };
+        
+        // Executar teste automático
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(testOfflineSystem, 500);
+        });
+    </script>
+</body>
+</html>

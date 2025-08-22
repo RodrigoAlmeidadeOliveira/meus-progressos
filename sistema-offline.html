@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Avaliação - Modo Offline</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .status-offline {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #ffeaa7;
+        }
+        .form-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #2d3748;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-success { background: #48bb78; }
+        .btn-danger { background: #f56565; }
+        .results-section {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .question-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .rating-scale {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .rating-scale input {
+            width: 20px;
+            height: 20px;
+        }
+        .rating-scale label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧠 Sistema de Avaliação de Habilidades</h1>
+        <h2>Modo Offline - Funciona Perfeitamente!</h2>
+    </div>
+    
+    <div class="status-offline">
+        <strong>✅ Sistema Offline Ativo:</strong> Os dados são salvos no seu navegador. 
+        Ideal para testar enquanto configura o Firebase!
+    </div>
+    
+    <form id="evaluation-form" class="form-container">
+        <h3>📋 Informações do Paciente</h3>
+        
+        <div class="form-group">
+            <label for="patient-name">Nome do Paciente*:</label>
+            <input type="text" id="patient-name" name="patient-name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="patient-age">Idade:</label>
+            <input type="number" id="patient-age" name="patient-age" min="1" max="100">
+        </div>
+        
+        <div class="form-group">
+            <label for="evaluation-date">Data da Avaliação*:</label>
+            <input type="date" id="evaluation-date" name="evaluation-date" required>
+        </div>
+        
+        <h3>👤 Informações do Avaliador</h3>
+        
+        <div class="form-group">
+            <label for="evaluator-name">Nome do Avaliador*:</label>
+            <input type="text" id="evaluator-name" name="evaluator-name" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="evaluator-email">Email do Avaliador*:</label>
+            <input type="email" id="evaluator-email" name="evaluator-email" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="evaluator-phone">Telefone do Avaliador*:</label>
+            <input type="tel" id="evaluator-phone" name="evaluator-phone" required>
+        </div>
+
+        <!-- Exemplo de Questões -->
+        <h3>🗣️ Avaliação de Habilidades Comunicativas</h3>
+        
+        <div class="question-section">
+            <h4>1. Olhar para o adulto quando chamada pelo nome</h4>
+            <div class="rating-scale">
+                <span>Nunca:</span>
+                <input type="radio" name="q1" value="1" id="q1_1"><label for="q1_1">1</label>
+                <input type="radio" name="q1" value="2" id="q1_2"><label for="q1_2">2</label>
+                <input type="radio" name="q1" value="3" id="q1_3"><label for="q1_3">3</label>
+                <input type="radio" name="q1" value="4" id="q1_4"><label for="q1_4">4</label>
+                <input type="radio" name="q1" value="5" id="q1_5"><label for="q1_5">5</label>
+                <span>:Sempre</span>
+            </div>
+        </div>
+        
+        <div class="question-section">
+            <h4>2. Manter contato ocular por pelo menos 1 segundo</h4>
+            <div class="rating-scale">
+                <span>Nunca:</span>
+                <input type="radio" name="q2" value="1" id="q2_1"><label for="q2_1">1</label>
+                <input type="radio" name="q2" value="2" id="q2_2"><label for="q2_2">2</label>
+                <input type="radio" name="q2" value="3" id="q2_3"><label for="q2_3">3</label>
+                <input type="radio" name="q2" value="4" id="q2_4"><label for="q2_4">4</label>
+                <input type="radio" name="q2" value="5" id="q2_5"><label for="q2_5">5</label>
+                <span>:Sempre</span>
+            </div>
+        </div>
+        
+        <div class="question-section">
+            <h4>3. Olhar nos olhos durante uma interação (aprox. 3 segundos)</h4>
+            <div class="rating-scale">
+                <span>Nunca:</span>
+                <input type="radio" name="q3" value="1" id="q3_1"><label for="q3_1">1</label>
+                <input type="radio" name="q3" value="2" id="q3_2"><label for="q3_2">2</label>
+                <input type="radio" name="q3" value="3" id="q3_3"><label for="q3_3">3</label>
+                <input type="radio" name="q3" value="4" id="q3_4"><label for="q3_4">4</label>
+                <input type="radio" name="q3" value="5" id="q3_5"><label for="q3_5">5</label>
+                <span>:Sempre</span>
+            </div>
+        </div>
+        
+        <div class="form-group">
+            <label for="observations">Observações Adicionais:</label>
+            <textarea id="observations" name="observations" rows="4" placeholder="Observações sobre o comportamento, contexto, etc..."></textarea>
+        </div>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <button type="submit" class="btn btn-success">💾 Salvar Avaliação</button>
+            <button type="button" id="view-results" class="btn">📊 Ver Resultados</button>
+            <button type="button" id="clear-form" class="btn btn-danger">🗑️ Limpar Formulário</button>
+        </div>
+    </form>
+    
+    <div id="results-section" class="results-section">
+        <h3>📊 Resultados das Avaliações</h3>
+        <div id="results-content"></div>
+    </div>
+
+    <script>
+        class OfflineEvaluationSystem {
+            constructor() {
+                this.form = document.getElementById('evaluation-form');
+                this.resultsSection = document.getElementById('results-section');
+                this.resultsContent = document.getElementById('results-content');
+                
+                this.setupEventListeners();
+                this.updateViewResultsButton();
+            }
+            
+            setupEventListeners() {
+                this.form.addEventListener('submit', (e) => this.handleSubmit(e));
+                document.getElementById('view-results').addEventListener('click', () => this.viewResults());
+                document.getElementById('clear-form').addEventListener('click', () => this.clearForm());
+                
+                // Set today's date as default
+                document.getElementById('evaluation-date').value = new Date().toISOString().split('T')[0];
+            }
+            
+            handleSubmit(e) {
+                e.preventDefault();
+                
+                if (!this.validateForm()) {
+                    alert('Por favor, preencha todos os campos obrigatórios.');
+                    return;
+                }
+                
+                const formData = this.collectFormData();
+                this.saveToLocalStorage(formData);
+                
+                alert('✅ Avaliação salva com sucesso!\n📝 Use "Ver Resultados" para visualizar os dados salvos.');
+                this.updateViewResultsButton();
+                this.clearForm();
+            }
+            
+            validateForm() {
+                const required = ['patient-name', 'evaluation-date', 'evaluator-name', 'evaluator-email', 'evaluator-phone'];
+                return required.every(id => document.getElementById(id).value.trim());
+            }
+            
+            collectFormData() {
+                const formData = new FormData(this.form);
+                const data = {
+                    timestamp: new Date().toISOString(),
+                    patientInfo: {
+                        name: formData.get('patient-name'),
+                        age: formData.get('patient-age'),
+                        evaluationDate: formData.get('evaluation-date')
+                    },
+                    evaluatorInfo: {
+                        name: formData.get('evaluator-name'),
+                        email: formData.get('evaluator-email'),
+                        phone: formData.get('evaluator-phone')
+                    },
+                    responses: {},
+                    observations: formData.get('observations')
+                };
+                
+                // Collect question responses
+                for (let i = 1; i <= 3; i++) {
+                    const response = formData.get(`q${i}`);
+                    if (response) {
+                        data.responses[`q${i}`] = parseInt(response);
+                    }
+                }
+                
+                return data;
+            }
+            
+            saveToLocalStorage(data) {
+                const saved = this.getSavedData();
+                const key = `${data.patientInfo.name}_${data.patientInfo.evaluationDate}`;
+                saved[key] = data;
+                localStorage.setItem('offlineEvaluations', JSON.stringify(saved));
+            }
+            
+            getSavedData() {
+                const saved = localStorage.getItem('offlineEvaluations');
+                return saved ? JSON.parse(saved) : {};
+            }
+            
+            clearForm() {
+                if (confirm('Limpar todos os dados do formulário?')) {
+                    this.form.reset();
+                    document.getElementById('evaluation-date').value = new Date().toISOString().split('T')[0];
+                    this.resultsSection.style.display = 'none';
+                }
+            }
+            
+            updateViewResultsButton() {
+                const savedData = this.getSavedData();
+                const hasData = Object.keys(savedData).length > 0;
+                document.getElementById('view-results').style.display = hasData ? 'inline-block' : 'none';
+            }
+            
+            viewResults() {
+                const savedData = this.getSavedData();
+                
+                if (Object.keys(savedData).length === 0) {
+                    this.resultsContent.innerHTML = '<p>📝 Nenhuma avaliação salva ainda.</p>';
+                    this.resultsSection.style.display = 'block';
+                    return;
+                }
+                
+                let html = '<h4>🗂️ Avaliações Salvas</h4>';
+                html += '<div style="display: grid; gap: 20px;">';
+                
+                Object.entries(savedData).forEach(([key, data]) => {
+                    const totalQuestions = Object.keys(data.responses).length;
+                    const totalScore = Object.values(data.responses).reduce((sum, score) => sum + score, 0);
+                    
+                    html += `
+                        <div style="border: 1px solid #e2e8f0; padding: 20px; border-radius: 8px; background: #f8fafc;">
+                            <h5>👤 ${data.patientInfo.name} - ${this.formatDate(data.patientInfo.evaluationDate)}</h5>
+                            <p><strong>Avaliador:</strong> ${data.evaluatorInfo.name}</p>
+                            <p><strong>Pontuação:</strong> ${totalScore}/${totalQuestions * 5} pontos</p>
+                            <p><strong>Questões:</strong> ${totalQuestions} respondidas</p>
+                            ${data.observations ? `<p><strong>Observações:</strong> ${data.observations}</p>` : ''}
+                            <div style="margin-top: 15px;">
+                                <button onclick="evaluationSystem.exportEvaluation('${key}')" class="btn" style="font-size: 12px; padding: 8px 15px;">📄 Exportar CSV</button>
+                                <button onclick="evaluationSystem.deleteEvaluation('${key}')" class="btn btn-danger" style="font-size: 12px; padding: 8px 15px;">🗑️ Excluir</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                html += `
+                    <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+                        <button onclick="evaluationSystem.exportAllEvaluations()" class="btn btn-success">📊 Exportar Todas as Avaliações (CSV)</button>
+                    </div>
+                `;
+                
+                this.resultsContent.innerHTML = html;
+                this.resultsSection.style.display = 'block';
+                this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+            }
+            
+            exportEvaluation(key) {
+                const savedData = this.getSavedData();
+                const data = savedData[key];
+                
+                let csv = "Campo,Valor\\n";
+                csv += `"Nome do Paciente","${data.patientInfo.name}"\\n`;
+                csv += `"Idade","${data.patientInfo.age || 'Não informado'}"\\n`;
+                csv += `"Data da Avaliação","${data.patientInfo.evaluationDate}"\\n`;
+                csv += `"Avaliador","${data.evaluatorInfo.name}"\\n`;
+                csv += `"Email","${data.evaluatorInfo.email}"\\n`;
+                csv += `"Telefone","${data.evaluatorInfo.phone}"\\n`;
+                csv += `"Observações","${data.observations || 'Nenhuma'}"\\n`;
+                csv += "\\n";
+                csv += "Questão,Pontuação\\n";
+                
+                Object.entries(data.responses).forEach(([question, score]) => {
+                    csv += `"${question}","${score}"\\n`;
+                });
+                
+                this.downloadCSV(csv, `avaliacao_${data.patientInfo.name.replace(/[^a-z0-9]/gi, '_')}_${data.patientInfo.evaluationDate}.csv`);
+            }
+            
+            exportAllEvaluations() {
+                const savedData = this.getSavedData();
+                
+                let csv = "Nome_Paciente,Idade,Data_Avaliacao,Avaliador,Email,Telefone,Questao,Pontuacao,Observacoes\\n";
+                
+                Object.entries(savedData).forEach(([key, data]) => {
+                    Object.entries(data.responses).forEach(([question, score]) => {
+                        csv += `"${data.patientInfo.name}","${data.patientInfo.age || ''}","${data.patientInfo.evaluationDate}","${data.evaluatorInfo.name}","${data.evaluatorInfo.email}","${data.evaluatorInfo.phone}","${question}","${score}","${data.observations || ''}"\\n`;
+                    });
+                });
+                
+                this.downloadCSV(csv, `todas_avaliacoes_${new Date().toISOString().split('T')[0]}.csv`);
+            }
+            
+            downloadCSV(csvContent, filename) {
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                
+                if (navigator.msSaveBlob) { // IE 10+
+                    navigator.msSaveBlob(blob, filename);
+                } else {
+                    link.href = URL.createObjectURL(blob);
+                    link.download = filename;
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+                
+                alert('📁 Arquivo CSV baixado com sucesso!');
+            }
+            
+            deleteEvaluation(key) {
+                if (confirm('❌ Excluir esta avaliação permanentemente?\\n\\nEsta ação não pode ser desfeita.')) {
+                    const savedData = this.getSavedData();
+                    delete savedData[key];
+                    localStorage.setItem('offlineEvaluations', JSON.stringify(savedData));
+                    this.updateViewResultsButton();
+                    
+                    if (Object.keys(savedData).length === 0) {
+                        this.resultsSection.style.display = 'none';
+                        alert('✅ Avaliação excluída! Não há mais dados salvos.');
+                    } else {
+                        this.viewResults();
+                        alert('✅ Avaliação excluída com sucesso!');
+                    }
+                }
+            }
+            
+            formatDate(dateString) {
+                if (!dateString) return '';
+                const date = new Date(dateString + 'T00:00:00');
+                return date.toLocaleDateString('pt-BR');
+            }
+        }
+        
+        // Initialize system when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const evaluationSystem = new OfflineEvaluationSystem();
+            window.evaluationSystem = evaluationSystem; // For button onclick access
+        });
+    </script>
+</body>
+</html>

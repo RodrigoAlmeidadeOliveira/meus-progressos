@@ -10,25 +10,39 @@
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getFirestore, connectFirestoreEmulator } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously, connectAuthEmulator } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
         
         // Configuração do Firebase - Projeto Real
         const firebaseConfig = {
-            apiKey: "AIzaSyDQVSHymus4QOX-VJ8r7YL9-eCIo08HLl0",
+            apiKey: "AIzaSyD_fkKU3N61u3HxKklIbdAMK2qUAPDVHhQ",
             authDomain: "avaliacao-habilidades-2024.firebaseapp.com",
             projectId: "avaliacao-habilidades-2024",
-            storageBucket: "avaliacao-habilidades-2024.appspot.com",
-            messagingSenderId: "764832157291",
-            appId: "1:764832157291:web:f4c8b2e9d1a6c7e5f8a9b0",
-            measurementId: "G-K1M2N3O4P5"
+            storageBucket: "avaliacao-habilidades-2024.firebasestorage.app",
+            messagingSenderId: "1026943873619",
+            appId: "1:1026943873619:web:50276ae57af2e3a9ea0ca6",
+            measurementId: "G-3LNVBBET4E"
         };
         
         // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
         const db = getFirestore(app);
         
-        // Disponibilizar globalmente
-        window.firebase = { app, db };
+        // Configurar autenticação anônima e aguardar antes de usar Firestore
+        async function initializeFirebaseAuth() {
+            try {
+                await signInAnonymously(auth);
+                console.log('Autenticação anônima realizada com sucesso');
+                window.firebase = { app, db, auth, initialized: true };
+            } catch (error) {
+                console.error('Erro na autenticação:', error);
+                window.firebase = { app, db, auth, initialized: false, error };
+            }
+        }
+        
+        // Inicializar autenticação
+        initializeFirebaseAuth();
     </script>
 </head>
 <body>

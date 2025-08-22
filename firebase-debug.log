@@ -1,0 +1,21 @@
+[debug] [2025-08-22T18:22:39.362Z] ----------------------------------------------------------------------
+[debug] [2025-08-22T18:22:39.364Z] Command:       /opt/homebrew/Cellar/node/24.4.1/bin/node /opt/homebrew/bin/firebase init
+[debug] [2025-08-22T18:22:39.364Z] CLI Version:   14.14.0
+[debug] [2025-08-22T18:22:39.364Z] Platform:      darwin
+[debug] [2025-08-22T18:22:39.364Z] Node Version:  v24.4.1
+[debug] [2025-08-22T18:22:39.364Z] Time:          Fri Aug 22 2025 15:22:39 GMT-0300 (Brasilia Standard Time)
+[debug] [2025-08-22T18:22:39.364Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-08-22T18:22:39.367Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-08-22T18:22:39.368Z] > authorizing via signed-in user (rodrigoalmeidadeoliveira@gmail.com)
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /Users/rodrigoalmeidadeoliveira/Library/CloudStorage/GoogleDrive-rodrigoalmeidadeoliveira@gmail.com/Outros computadores/Notebook/Python/Projetos/FormAval
+

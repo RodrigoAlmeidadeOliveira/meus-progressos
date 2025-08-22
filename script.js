@@ -8,12 +8,13 @@ class FirebaseManager {
 
     async initFirebase() {
         try {
-            // Aguardar Firebase estar disponível
-            while (!window.firebase) {
+            // Aguardar Firebase estar disponível E autenticado
+            while (!window.firebase || !window.firebase.initialized) {
                 await new Promise(resolve => setTimeout(resolve, 100));
             }
             
             this.db = window.firebase.db;
+            this.auth = window.firebase.auth;
             this.initialized = true;
             console.log('Firebase inicializado com sucesso');
         } catch (error) {

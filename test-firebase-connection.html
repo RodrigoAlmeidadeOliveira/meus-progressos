@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Conexão Firebase - Avaliação Habilidades 2024</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            max-width: 800px; 
+            margin: 40px auto; 
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .test-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        .loading { background: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover { opacity: 0.9; }
+        #test-results {
+            margin-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            padding-top: 20px;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔥 Teste de Conectividade Firebase</h1>
+        <h2>Projeto: avaliacao-habilidades-2024</h2>
+        
+        <div id="status" class="status loading">
+            ⏳ Iniciando testes...
+        </div>
+        
+        <div class="actions">
+            <button class="btn" onclick="testFirebaseConnection()">🔄 Testar Conexão</button>
+            <button class="btn" onclick="testFirestoreWrite()">📝 Testar Escrita</button>
+            <button class="btn" onclick="testFirestoreRead()">📖 Testar Leitura</button>
+            <button class="btn" onclick="clearTestData()">🗑️ Limpar Dados Teste</button>
+        </div>
+        
+        <div id="test-results"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, doc, setDoc, getDoc, deleteDoc, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        // Configuração Firebase - Projeto Real
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_fkKU3N61u3HxKklIbdAMK2qUAPDVHhQ",
+            authDomain: "avaliacao-habilidades-2024.firebaseapp.com",
+            projectId: "avaliacao-habilidades-2024",
+            storageBucket: "avaliacao-habilidades-2024.firebasestorage.app",
+            messagingSenderId: "1026943873619",
+            appId: "1:1026943873619:web:50276ae57af2e3a9ea0ca6",
+            measurementId: "G-3LNVBBET4E"
+        };
+        
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        
+        let isAuthenticated = false;
+        let testResults = [];
+        
+        // Função para log de resultados
+        function logResult(test, status, message, details = null) {
+            const timestamp = new Date().toLocaleString('pt-BR');
+            testResults.push({ test, status, message, details, timestamp });
+            updateResultsDisplay();
+        }
+        
+        function updateResultsDisplay() {
+            const resultsDiv = document.getElementById('test-results');
+            let html = '<h3>📊 Resultados dos Testes</h3>';
+            
+            testResults.forEach(result => {
+                const statusClass = result.status === 'success' ? 'success' : 
+                                   result.status === 'error' ? 'error' : 'info';
+                
+                html += `<div class="status ${statusClass}">
+                    <strong>[${result.timestamp}] ${result.test}</strong><br>
+                    ${result.message}
+                    ${result.details ? `<pre>${JSON.stringify(result.details, null, 2)}</pre>` : ''}
+                </div>`;
+            });
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        // Autenticação inicial
+        async function initializeAuth() {
+            try {
+                document.getElementById('status').textContent = '🔐 Realizando autenticação anônima...';
+                await signInAnonymously(auth);
+                isAuthenticated = true;
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = '✅ Firebase inicializado e autenticado com sucesso!';
+                logResult('Autenticação', 'success', 'Autenticação anônima realizada com sucesso');
+            } catch (error) {
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ Erro na autenticação: ' + error.message;
+                logResult('Autenticação', 'error', 'Falha na autenticação', error);
+            }
+        }
+        
+        // Teste de conexão
+        window.testFirebaseConnection = async function() {
+            if (!isAuthenticated) {
+                alert('Aguarde a autenticação ser concluída primeiro');
+                return;
+            }
+            
+            try {
+                logResult('Conexão', 'info', 'Testando conectividade com Firestore...');
+                
+                // Teste simples de leitura
+                const testDoc = doc(db, 'test_connectivity', 'connection_test');
+                await getDoc(testDoc);
+                
+                logResult('Conexão', 'success', 'Conexão com Firestore estabelecida com sucesso');
+            } catch (error) {
+                logResult('Conexão', 'error', 'Erro na conexão com Firestore', error);
+            }
+        };
+        
+        // Teste de escrita
+        window.testFirestoreWrite = async function() {
+            if (!isAuthenticated) {
+                alert('Aguarde a autenticação ser concluída primeiro');
+                return;
+            }
+            
+            try {
+                logResult('Escrita', 'info', 'Testando escrita no Firestore...');
+                
+                const testData = {
+                    message: 'Teste de conectividade Firebase',
+                    timestamp: new Date().toISOString(),
+                    userAgent: navigator.userAgent,
+                    project: 'avaliacao-habilidades-2024'
+                };
+                
+                const docRef = await addDoc(collection(db, 'test_connectivity'), testData);
+                
+                logResult('Escrita', 'success', `Documento criado com ID: ${docRef.id}`, testData);
+            } catch (error) {
+                logResult('Escrita', 'error', 'Erro na escrita do Firestore', error);
+            }
+        };
+        
+        // Teste de leitura
+        window.testFirestoreRead = async function() {
+            if (!isAuthenticated) {
+                alert('Aguarde a autenticação ser concluída primeiro');
+                return;
+            }
+            
+            try {
+                logResult('Leitura', 'info', 'Testando leitura do Firestore...');
+                
+                const testDoc = doc(db, 'test_connectivity', 'read_test');
+                await setDoc(testDoc, {
+                    message: 'Documento de teste para leitura',
+                    created: new Date().toISOString()
+                });
+                
+                const docSnap = await getDoc(testDoc);
+                
+                if (docSnap.exists()) {
+                    logResult('Leitura', 'success', 'Leitura realizada com sucesso', docSnap.data());
+                } else {
+                    logResult('Leitura', 'error', 'Documento não encontrado');
+                }
+            } catch (error) {
+                logResult('Leitura', 'error', 'Erro na leitura do Firestore', error);
+            }
+        };
+        
+        // Limpar dados de teste
+        window.clearTestData = async function() {
+            if (!isAuthenticated) {
+                alert('Aguarde a autenticação ser concluída primeiro');
+                return;
+            }
+            
+            try {
+                logResult('Limpeza', 'info', 'Removendo dados de teste...');
+                
+                const testDoc = doc(db, 'test_connectivity', 'read_test');
+                await deleteDoc(testDoc);
+                
+                logResult('Limpeza', 'success', 'Dados de teste removidos com sucesso');
+            } catch (error) {
+                logResult('Limpeza', 'error', 'Erro na remoção dos dados de teste', error);
+            }
+        };
+        
+        // Inicializar quando a página carregar
+        initializeAuth();
+        
+        // Expor variáveis globalmente para debug
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDb = db;
+    </script>
+</body>
+</html>

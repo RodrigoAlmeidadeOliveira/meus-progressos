@@ -1,0 +1,61 @@
+depois quero desenvolver um modelo de login integrado com o google / facebook
+
+
+⏺ Excelente ideia! Um sistema de login integrado com Google/Facebook trará muito mais segurança e profissionalismo ao sistema. Vou
+  documentar essa funcionalidade para implementação futura.
+
+
+⏺ Update Todos
+
+  ⎿  ☐ Documentar sistema de autenticação futura
+     ☐ Planejar integração Google/Facebook
+     ☐ Definir permissões por tipo de usuário
+
+================================================================== Previous Conversation Compacted ==================================================================
+⏺ Compact summary (ctrl+r to expand)
+  ⎿  Read FIREBASE_CONFIGURADO.md (205 lines)
+  ⎿  Referenced file script-terapeuta.js
+  ⎿  Read terapeuta.html (236 lines)
+  ⎿  Read pais.html (292 lines)
+  ⎿  Referenced file index.html
+  ⎿  Todo list read (3 items)
+
+⏺ Update Todos
+  ⎿  ☒ Documentar sistema de autenticação futura
+     ☐ Planejar integração Google/Facebook
+     ☐ Definir permissões por tipo de usuário
+
+⏺ Write(SISTEMA_AUTENTICACAO.md)
+  ⎿  Wrote 417 lines to SISTEMA_AUTENTICACAO.md                                                                                        
+     # 🔐 Sistema de Autenticação - Planejamento
+     ## 📋 **VISÃO GERAL**
+     Sistema de autenticação integrado com Google/Facebook para separar acesso entre pais e terapeutas com segurança de dados por
+     usuário.
+     ---
+     ## 🎯 **OBJETIVOS PRINCIPAIS**
+     … +407 lines (ctrl+r to expand)
+
+⏺ Update Todos
+  ⎿  ☒ Documentar sistema de autenticação futura
+     ☒ Planejar integração Google/Facebook
+     ☒ Definir permissões por tipo de usuário
+
+⏺ ✅ Sistema de Autenticação Documentado!
+
+  Criei um planejamento completo para integração Google/Facebook com:
+
+  🔐 Principais Recursos:
+  - Login social (Google + Facebook)
+  - Controle de acesso por tipo (pais/terapeutas)
+  - Segurança de dados com isolamento por usuário
+  - Regras Firestore avançadas
+  - Sistema de compartilhamento seguro
+
+  📋 Estrutura:
+  - Arquitetura detalhada com fluxos
+  - Código de implementação
+  - Regras de segurança
+  - Cronograma de 4 fases
+  - Estimativa de custos (~$0.64/mês)
+
+  🎯 Ready para implementar quando você quiser desenvolver o sistema de login integrado!
