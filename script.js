@@ -1,3 +1,125 @@
+// Firebase Functions
+class FirebaseManager {
+    constructor() {
+        this.db = null;
+        this.initialized = false;
+        this.initFirebase();
+    }
+
+    async initFirebase() {
+        try {
+            // Aguardar Firebase estar disponível
+            while (!window.firebase) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            this.db = window.firebase.db;
+            this.initialized = true;
+            console.log('Firebase inicializado com sucesso');
+        } catch (error) {
+            console.warn('Firebase não disponível, usando localStorage:', error);
+            this.initialized = false;
+        }
+    }
+
+    async saveEvaluation(data) {
+        if (!this.initialized) {
+            return this.saveToLocalStorage(data);
+        }
+
+        try {
+            const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            // Criar documento com ID baseado na data e nome do paciente
+            const docData = {
+                ...data,
+                createdAt: new Date().toISOString(),
+                patientId: this.generatePatientId(data.patientInfo.name),
+                evaluationId: `${data.patientInfo.name.replace(/\s+/g, '_')}_${data.patientInfo.evaluationDate}`
+            };
+
+            const docRef = await addDoc(collection(this.db, 'evaluations'), docData);
+            console.log('Avaliação salva no Firebase:', docRef.id);
+            
+            // Também salvar localmente como backup
+            this.saveToLocalStorage(data);
+            
+            return { success: true, id: docRef.id };
+        } catch (error) {
+            console.error('Erro ao salvar no Firebase:', error);
+            // Fallback para localStorage
+            return this.saveToLocalStorage(data);
+        }
+    }
+
+    async getEvaluations(patientName = null) {
+        if (!this.initialized) {
+            return this.getFromLocalStorage();
+        }
+
+        try {
+            const { getDocs, collection, query, where, orderBy } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            let q = collection(this.db, 'evaluations');
+            
+            if (patientName) {
+                q = query(q, where('patientInfo.name', '==', patientName));
+            }
+            
+            q = query(q, orderBy('createdAt', 'desc'));
+            
+            const querySnapshot = await getDocs(q);
+            const evaluations = {};
+            
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                evaluations[data.patientInfo.evaluationDate] = {
+                    ...data,
+                    firebaseId: doc.id
+                };
+            });
+            
+            return evaluations;
+        } catch (error) {
+            console.error('Erro ao buscar dados do Firebase:', error);
+            return this.getFromLocalStorage();
+        }
+    }
+
+    async deleteEvaluation(date, firebaseId = null) {
+        if (this.initialized && firebaseId) {
+            try {
+                const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                await deleteDoc(doc(this.db, 'evaluations', firebaseId));
+                console.log('Avaliação deletada do Firebase');
+            } catch (error) {
+                console.error('Erro ao deletar do Firebase:', error);
+            }
+        }
+        
+        // Também deletar do localStorage
+        const savedData = this.getFromLocalStorage();
+        delete savedData[date];
+        localStorage.setItem('questionnaireData', JSON.stringify(savedData));
+    }
+
+    generatePatientId(name) {
+        return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    }
+
+    saveToLocalStorage(data) {
+        const savedData = this.getFromLocalStorage();
+        savedData[data.patientInfo.evaluationDate] = data;
+        localStorage.setItem('questionnaireData', JSON.stringify(savedData));
+        return { success: true, local: true };
+    }
+
+    getFromLocalStorage() {
+        const saved = localStorage.getItem('questionnaireData');
+        return saved ? JSON.parse(saved) : {};
+    }
+}
+
 class QuestionnaireManager {
     constructor() {
         this.form = document.getElementById('questionnaire-form');
@@ -12,6 +134,9 @@ class QuestionnaireManager {
         
         this.currentMainTab = 'comunicativas';
         this.currentSubTab = 'contato-visual';
+        
+        // Inicializar Firebase Manager
+        this.firebaseManager = new FirebaseManager();
         
         this.init();
     }
@@ -390,7 +515,7 @@ class QuestionnaireManager {
         return questionItem;
     }
 
-    handleSubmit(e) {
+    async handleSubmit(e) {
         e.preventDefault();
         
         if (!this.validateForm()) {
@@ -400,17 +525,41 @@ class QuestionnaireManager {
 
         const formData = this.collectFormData();
         
-        if (this.evaluationExists(formData.evaluationDate)) {
+        const existingData = await this.getSavedData();
+        if (existingData.hasOwnProperty(formData.patientInfo.evaluationDate)) {
             if (!confirm('Já existe uma avaliação para esta data. Deseja substituí-la?')) {
                 return;
             }
         }
 
-        this.saveData(formData);
-        
-        alert('Avaliação salva com sucesso!');
-        this.updateViewResultsButton();
-        this.clearForm();
+        // Mostrar loading
+        const submitButton = document.getElementById('submit-evaluation');
+        const originalText = submitButton.textContent;
+        submitButton.textContent = '💾 Salvando...';
+        submitButton.disabled = true;
+
+        try {
+            const result = await this.firebaseManager.saveEvaluation(formData);
+            
+            if (result.success) {
+                if (result.local) {
+                    alert('✅ Avaliação salva localmente!\n⚠️ Para backup na nuvem, configure o Firebase.');
+                } else {
+                    alert('✅ Avaliação salva com sucesso na nuvem!\n📊 Dados seguros e acessíveis ao profissional.');
+                }
+            } else {
+                throw new Error('Falha ao salvar');
+            }
+            
+            this.updateViewResultsButton();
+            this.clearForm();
+        } catch (error) {
+            console.error('Erro ao salvar:', error);
+            alert('❌ Erro ao salvar avaliação. Tente novamente.');
+        } finally {
+            submitButton.textContent = originalText;
+            submitButton.disabled = false;
+        }
     }
 
     validateForm() {
@@ -503,20 +652,8 @@ class QuestionnaireManager {
         return `Questão ${questionNumber}`;
     }
 
-    evaluationExists(date) {
-        const savedData = this.getSavedData();
-        return savedData.hasOwnProperty(date);
-    }
-
-    saveData(data) {
-        const savedData = this.getSavedData();
-        savedData[data.patientInfo.evaluationDate] = data;
-        localStorage.setItem('questionnaireData', JSON.stringify(savedData));
-    }
-
-    getSavedData() {
-        const saved = localStorage.getItem('questionnaireData');
-        return saved ? JSON.parse(saved) : {};
+    async getSavedData() {
+        return await this.firebaseManager.getEvaluations();
     }
 
     setupTabNavigation() {
@@ -833,25 +970,33 @@ class QuestionnaireManager {
         }
     }
 
-    updateViewResultsButton() {
-        const savedData = this.getSavedData();
+    async updateViewResultsButton() {
+        const savedData = await this.getSavedData();
         const hasData = Object.keys(savedData).length > 0;
         
         this.viewResultsButton.style.display = hasData ? 'inline-block' : 'none';
     }
 
-    viewResults() {
-        const savedData = this.getSavedData();
-        
-        if (Object.keys(savedData).length === 0) {
-            alert('Nenhuma avaliação salva encontrada.');
-            return;
-        }
-
-        this.displayResults(savedData);
-        this.createCharts(savedData);
+    async viewResults() {
+        // Mostrar loading
+        this.resultsContent.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>🔄 Carregando resultados...</h3></div>';
         this.resultsSection.style.display = 'block';
-        this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        
+        try {
+            const savedData = await this.getSavedData();
+            
+            if (Object.keys(savedData).length === 0) {
+                this.resultsContent.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>📋 Nenhuma avaliação encontrada</h3><p>Complete uma avaliação primeiro para ver os resultados.</p></div>';
+                return;
+            }
+
+            this.displayResults(savedData);
+            this.createCharts(savedData);
+            this.resultsSection.scrollIntoView({ behavior: 'smooth' });
+        } catch (error) {
+            console.error('Erro ao carregar resultados:', error);
+            this.resultsContent.innerHTML = '<div style="text-align: center; padding: 40px;"><h3>❌ Erro ao carregar resultados</h3><p>Tente novamente em alguns instantes.</p></div>';
+        }
     }
 
     displayResults(savedData) {
@@ -1067,21 +1212,28 @@ class QuestionnaireManager {
         return html;
     }
 
-    deleteEvaluation(date) {
+    async deleteEvaluation(date) {
         if (confirm('Tem certeza que deseja excluir esta avaliação? Esta ação não pode ser desfeita.')) {
-            const savedData = this.getSavedData();
-            delete savedData[date];
-            
-            localStorage.setItem('questionnaireData', JSON.stringify(savedData));
-            
-            this.updateViewResultsButton();
-            
-            if (Object.keys(savedData).length === 0) {
-                this.resultsSection.style.display = 'none';
-                alert('Avaliação excluída. Não há mais dados salvos.');
-            } else {
-                this.viewResults();
-                alert('Avaliação excluída com sucesso!');
+            try {
+                const savedData = await this.getSavedData();
+                const evaluationData = savedData[date];
+                const firebaseId = evaluationData?.firebaseId;
+                
+                await this.firebaseManager.deleteEvaluation(date, firebaseId);
+                
+                await this.updateViewResultsButton();
+                
+                const updatedData = await this.getSavedData();
+                if (Object.keys(updatedData).length === 0) {
+                    this.resultsSection.style.display = 'none';
+                    alert('Avaliação excluída. Não há mais dados salvos.');
+                } else {
+                    this.viewResults();
+                    alert('Avaliação excluída com sucesso!');
+                }
+            } catch (error) {
+                console.error('Erro ao excluir avaliação:', error);
+                alert('Erro ao excluir avaliação. Tente novamente.');
             }
         }
     }
