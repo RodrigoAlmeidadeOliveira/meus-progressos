@@ -53,16 +53,16 @@ class FirebaseManager {
 
     async getEvaluationsByPatient(patientName) {
         const allEvaluations = await this.getAllEvaluations();
-        return allEvaluations.filter(eval => 
-            eval.patientInfo.name.toLowerCase().includes(patientName.toLowerCase())
+        return allEvaluations.filter(evaluation => 
+            evaluation.patientInfo.name.toLowerCase().includes(patientName.toLowerCase())
         );
     }
 
     async getEvaluationsByDateRange(startDate, endDate) {
         const allEvaluations = await this.getAllEvaluations();
-        return allEvaluations.filter(eval => {
-            const evalDate = new Date(eval.patientInfo.evaluationDate);
-            return evalDate >= new Date(startDate) && evalDate <= new Date(endDate);
+        return allEvaluations.filter(evaluation => {
+            const evaluationDate = new Date(evaluation.patientInfo.evaluationDate);
+            return evaluationDate >= new Date(startDate) && evaluationDate <= new Date(endDate);
         });
     }
 
@@ -185,8 +185,8 @@ class TherapistDashboard {
 
     getUniquePatients() {
         const patientNames = new Set();
-        this.allEvaluations.forEach(eval => {
-            patientNames.add(eval.patientInfo.name);
+        this.allEvaluations.forEach(evaluation => {
+            patientNames.add(evaluation.patientInfo.name);
         });
         return Array.from(patientNames);
     }
@@ -206,7 +206,7 @@ class TherapistDashboard {
     calculateAverageScore() {
         if (this.allEvaluations.length === 0) return '0%';
         
-        const totalScore = this.allEvaluations.reduce((sum, eval) => sum + eval.totalScore, 0);
+        const totalScore = this.allEvaluations.reduce((sum, evaluation) => sum + evaluation.totalScore, 0);
         const maxPossibleScore = 149 * 5; // 149 questões × 5 pontos máximos
         const avgScore = totalScore / this.allEvaluations.length;
         const percentage = Math.round((avgScore / maxPossibleScore) * 100);
@@ -219,9 +219,9 @@ class TherapistDashboard {
         const reportEvaluatorSelector = document.getElementById('report-evaluator-selector');
         
         const evaluators = new Set();
-        this.allEvaluations.forEach(eval => {
-            if (eval.evaluatorInfo?.name) {
-                evaluators.add(eval.evaluatorInfo.name);
+        this.allEvaluations.forEach(evaluation => {
+            if (evaluation.evaluatorInfo?.name) {
+                evaluators.add(evaluation.evaluatorInfo.name);
             }
         });
         
@@ -336,8 +336,8 @@ class TherapistDashboard {
 
     selectPatient(patientName) {
         this.currentPatient = patientName;
-        const patientEvaluations = this.allEvaluations.filter(eval => 
-            eval.patientInfo.name === patientName
+        const patientEvaluations = this.allEvaluations.filter(evaluation => 
+            evaluation.patientInfo.name === patientName
         );
         
         this.showPatientDetails(patientName, patientEvaluations);
@@ -468,8 +468,8 @@ class TherapistDashboard {
             new Date(a.patientInfo.evaluationDate) - new Date(b.patientInfo.evaluationDate)
         );
         
-        const labels = sortedEvaluations.map(eval => this.formatDate(eval.patientInfo.evaluationDate));
-        const scores = sortedEvaluations.map(eval => Math.round((eval.totalScore / 745) * 100));
+        const labels = sortedEvaluations.map(evaluation => this.formatDate(evaluation.patientInfo.evaluationDate));
+        const scores = sortedEvaluations.map(evaluation => Math.round((evaluation.totalScore / 745) * 100));
         
         new Chart(ctx, {
             type: 'line',
@@ -579,8 +579,8 @@ class TherapistDashboard {
     exportPatientData() {
         if (!this.currentPatient) return;
         
-        const patientEvaluations = this.allEvaluations.filter(eval => 
-            eval.patientInfo.name === this.currentPatient
+        const patientEvaluations = this.allEvaluations.filter(evaluation => 
+            evaluation.patientInfo.name === this.currentPatient
         );
         
         this.generateCSV(patientEvaluations, `dados_${this.currentPatient.replace(/\s+/g, '_')}`);
@@ -599,9 +599,9 @@ class TherapistDashboard {
             return;
         }
         
-        const filteredData = this.allEvaluations.filter(eval => {
-            const evalDate = new Date(eval.patientInfo.evaluationDate);
-            return evalDate >= new Date(dateFrom) && evalDate <= new Date(dateTo);
+        const filteredData = this.allEvaluations.filter(evaluation => {
+            const evaluationDate = new Date(evaluation.patientInfo.evaluationDate);
+            return evaluationDate >= new Date(dateFrom) && evaluationDate <= new Date(dateTo);
         });
         
         this.generateCSV(filteredData, `relatorio_periodo_${dateFrom}_${dateTo}`);
@@ -615,8 +615,8 @@ class TherapistDashboard {
             return;
         }
         
-        const filteredData = this.allEvaluations.filter(eval => 
-            eval.evaluatorInfo?.name === evaluator
+        const filteredData = this.allEvaluations.filter(evaluation => 
+            evaluation.evaluatorInfo?.name === evaluator
         );
         
         this.generateCSV(filteredData, `relatorio_${evaluator.replace(/\s+/g, '_')}`);
@@ -679,8 +679,8 @@ class TherapistDashboard {
     generateDetailedReport() {
         if (!this.currentPatient) return;
         
-        const patientEvaluations = this.allEvaluations.filter(eval => 
-            eval.patientInfo.name === this.currentPatient
+        const patientEvaluations = this.allEvaluations.filter(evaluation => 
+            evaluation.patientInfo.name === this.currentPatient
         );
         
         // Implementar geração de relatório detalhado
