@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Terapeuta - Sistema de Avaliação</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles-terapeuta.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        
+        // Configuração do Firebase (será atualizada com suas credenciais)
+        const firebaseConfig = {
+            apiKey: "demo-api-key",
+            authDomain: "demo-project.firebaseapp.com",
+            projectId: "demo-project",
+            storageBucket: "demo-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "demo-app-id"
+        };
+        
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        
+        // Disponibilizar globalmente
+        window.firebase = { app, db };
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header class="therapist-header">
+            <h1>👨‍⚕️ Painel do Terapeuta</h1>
+            <h2>Sistema de Avaliação de Habilidades Comunicativas</h2>
+            <div class="header-actions">
+                <a href="pais.html" class="btn-secondary">📝 Formulário para Pais</a>
+                <a href="index.html" class="btn-secondary">🏠 Sistema Completo</a>
+            </div>
+        </header>
+
+        <!-- Dashboard Principal -->
+        <div class="dashboard">
+            <!-- Estatísticas Gerais -->
+            <div class="stats-section">
+                <h3>📊 Estatísticas Gerais</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-patients">-</div>
+                        <div class="stat-label">Pacientes</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="total-evaluations">-</div>
+                        <div class="stat-label">Avaliações</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="last-evaluation">-</div>
+                        <div class="stat-label">Última Avaliação</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="avg-score">-</div>
+                        <div class="stat-label">Pontuação Média</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filtros de Busca -->
+            <div class="filters-section">
+                <h3>🔍 Filtros de Busca</h3>
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label for="patient-filter">Buscar Paciente:</label>
+                        <input type="text" id="patient-filter" placeholder="Nome do paciente...">
+                    </div>
+                    <div class="filter-group">
+                        <label for="date-from">Data Inicial:</label>
+                        <input type="date" id="date-from">
+                    </div>
+                    <div class="filter-group">
+                        <label for="date-to">Data Final:</label>
+                        <input type="date" id="date-to">
+                    </div>
+                    <div class="filter-group">
+                        <label for="evaluator-filter">Avaliador:</label>
+                        <select id="evaluator-filter">
+                            <option value="">Todos os avaliadores</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button type="button" id="apply-filters" class="btn-primary">🔍 Aplicar Filtros</button>
+                    <button type="button" id="clear-filters" class="btn-secondary">🗑️ Limpar</button>
+                    <button type="button" id="refresh-data" class="btn-secondary">🔄 Atualizar</button>
+                </div>
+            </div>
+
+            <!-- Lista de Pacientes -->
+            <div class="patients-section">
+                <h3>👥 Lista de Pacientes</h3>
+                <div id="patients-list" class="patients-grid">
+                    <div class="loading-message">
+                        🔄 Carregando dados dos pacientes...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detalhes do Paciente Selecionado -->
+            <div id="patient-details" class="patient-details" style="display: none;">
+                <div class="details-header">
+                    <h3 id="patient-name-title">Nome do Paciente</h3>
+                    <div class="details-actions">
+                        <button type="button" id="export-patient-data" class="btn-primary">📊 Exportar Dados</button>
+                        <button type="button" id="generate-report" class="btn-primary">📋 Gerar Relatório</button>
+                        <button type="button" id="close-details" class="btn-secondary">❌ Fechar</button>
+                    </div>
+                </div>
+
+                <!-- Informações do Paciente -->
+                <div class="patient-info-summary">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <label>Total de Avaliações:</label>
+                            <span id="patient-total-evaluations">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Primeira Avaliação:</label>
+                            <span id="patient-first-evaluation">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Última Avaliação:</label>
+                            <span id="patient-last-evaluation">-</span>
+                        </div>
+                        <div class="info-item">
+                            <label>Progresso Geral:</label>
+                            <span id="patient-progress">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Histórico de Avaliações -->
+                <div class="evaluations-history">
+                    <h4>📅 Histórico de Avaliações</h4>
+                    <div id="evaluations-timeline" class="timeline">
+                        <!-- Timeline será preenchida dinamicamente -->
+                    </div>
+                </div>
+
+                <!-- Gráficos de Evolução -->
+                <div class="charts-section">
+                    <h4>📈 Gráficos de Evolução</h4>
+                    <div class="charts-grid">
+                        <div class="chart-container">
+                            <h5>Progresso por Categoria</h5>
+                            <canvas id="categoryProgressChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h5>Evolução Temporal</h5>
+                            <canvas id="temporalEvolutionChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h5>Comparação de Grupos</h5>
+                            <div class="chart-controls">
+                                <select id="group-comparison-selector">
+                                    <option value="">Selecione um grupo...</option>
+                                </select>
+                            </div>
+                            <canvas id="groupComparisonChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h5>Radar de Habilidades</h5>
+                            <canvas id="skillsRadarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Relatórios e Exportação -->
+            <div class="reports-section">
+                <h3>📊 Relatórios e Exportação</h3>
+                <div class="reports-grid">
+                    <div class="report-card">
+                        <h4>📈 Relatório Geral</h4>
+                        <p>Estatísticas completas de todos os pacientes</p>
+                        <button type="button" id="export-general-report" class="btn-primary">Exportar CSV</button>
+                    </div>
+                    <div class="report-card">
+                        <h4>📋 Relatório por Período</h4>
+                        <p>Avaliações em período específico</p>
+                        <div class="period-inputs">
+                            <input type="date" id="report-date-from" class="small-input">
+                            <input type="date" id="report-date-to" class="small-input">
+                        </div>
+                        <button type="button" id="export-period-report" class="btn-primary">Exportar CSV</button>
+                    </div>
+                    <div class="report-card">
+                        <h4>👥 Relatório por Avaliador</h4>
+                        <p>Dados organizados por responsável</p>
+                        <select id="report-evaluator-selector" class="small-input">
+                            <option value="">Selecione avaliador...</option>
+                        </select>
+                        <button type="button" id="export-evaluator-report" class="btn-primary">Exportar CSV</button>
+                    </div>
+                    <div class="report-card">
+                        <h4>🔄 Backup Completo</h4>
+                        <p>Todos os dados do sistema</p>
+                        <button type="button" id="export-backup" class="btn-primary">Download Backup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal de Relatório Detalhado -->
+        <div id="report-modal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 id="modal-title">Relatório Detalhado</h3>
+                    <button type="button" id="close-modal" class="close-button">❌</button>
+                </div>
+                <div class="modal-body" id="modal-content">
+                    <!-- Conteúdo será preenchido dinamicamente -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" id="modal-export" class="btn-primary">📊 Exportar</button>
+                    <button type="button" id="modal-close" class="btn-secondary">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script-terapeuta.js"></script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Avaliação de Habilidades Comunicativas</title>
+    <title>Avaliação de Habilidades - Formulário para Pais</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
@@ -33,65 +33,15 @@
 <body>
     <div class="container">
         <header>
-            <h1>Sistema de Avaliação</h1>
-            <h2>Habilidades Comunicativas - Escolha o Módulo</h2>
+            <h1>📋 Avaliação de Habilidades</h1>
+            <h2>Formulário para Pais e Responsáveis</h2>
+            <div class="progress-indicator">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="main-progress"></div>
+                </div>
+                <span class="progress-text" id="progress-text">0% Concluído</span>
+            </div>
         </header>
-
-        <!-- Seleção de Módulos -->
-        <div class="modules-selection">
-            <div class="module-card parent-module">
-                <div class="module-icon">👨‍👩‍👧‍👦</div>
-                <h3>Para Pais e Responsáveis</h3>
-                <p>Formulário simplificado e intuitivo para avaliação das habilidades da criança</p>
-                <div class="module-features">
-                    <span class="feature">✅ Interface amigável</span>
-                    <span class="feature">✅ Progresso visual</span>
-                    <span class="feature">✅ Salvamento automático</span>
-                    <span class="feature">✅ 149 questões organizadas</span>
-                </div>
-                <a href="pais.html" class="btn-primary module-button">
-                    📝 Preencher Avaliação
-                </a>
-            </div>
-
-            <div class="module-card therapist-module">
-                <div class="module-icon">👨‍⚕️</div>
-                <h3>Para Terapeutas</h3>
-                <p>Painel completo para análise de dados, relatórios e acompanhamento de pacientes</p>
-                <div class="module-features">
-                    <span class="feature">📊 Dashboard completo</span>
-                    <span class="feature">📈 Gráficos de evolução</span>
-                    <span class="feature">📋 Relatórios detalhados</span>
-                    <span class="feature">👥 Gestão de pacientes</span>
-                </div>
-                <a href="terapeuta.html" class="btn-primary module-button">
-                    🔍 Acessar Painel
-                </a>
-            </div>
-        </div>
-
-        <!-- Informações do Sistema -->
-        <div class="system-info">
-            <h3>🎯 Sobre o Sistema</h3>
-            <div class="info-grid">
-                <div class="info-item">
-                    <h4>📋 149 Questões</h4>
-                    <p>Avaliação completa dividida em 4 categorias principais de habilidades</p>
-                </div>
-                <div class="info-item">
-                    <h4>📊 Análise Completa</h4>
-                    <p>Gráficos de evolução, comparações e relatórios detalhados</p>
-                </div>
-                <div class="info-item">
-                    <h4>☁️ Dados Seguros</h4>
-                    <p>Armazenamento local e na nuvem com backup automático</p>
-                </div>
-                <div class="info-item">
-                    <h4>📱 Multiplataforma</h4>
-                    <p>Funciona em computador, tablet e celular</p>
-                </div>
-            </div>
-        </div>
 
         <div class="scale-info">
             <h3>Escala de Pontuação:</h3>
@@ -110,25 +60,25 @@
                 <h3>Informações da Avaliação</h3>
                 
                 <div class="info-section">
-                    <h4>Dados do Avaliado</h4>
+                    <h4>Dados da Criança</h4>
                     <div class="form-group">
-                        <label for="patient-name">Nome do Avaliado:</label>
+                        <label for="patient-name">Nome da Criança:</label>
                         <input type="text" id="patient-name" name="patient-name" required>
                     </div>
                 </div>
 
                 <div class="info-section">
-                    <h4>Dados do Avaliador</h4>
+                    <h4>Seus Dados (Responsável)</h4>
                     <div class="form-group">
-                        <label for="evaluator-name">Nome do Avaliador:</label>
+                        <label for="evaluator-name">Seu Nome Completo:</label>
                         <input type="text" id="evaluator-name" name="evaluator-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="evaluator-email">Email do Avaliador:</label>
+                        <label for="evaluator-email">Seu Email:</label>
                         <input type="email" id="evaluator-email" name="evaluator-email" required>
                     </div>
                     <div class="form-group">
-                        <label for="evaluator-phone">Telefone Celular do Avaliador:</label>
+                        <label for="evaluator-phone">Seu Telefone Celular:</label>
                         <input type="tel" id="evaluator-phone" name="evaluator-phone" pattern="[0-9\s\(\)\-\+]+" placeholder="(11) 99999-9999" required>
                     </div>
                 </div>
@@ -136,7 +86,7 @@
                 <div class="info-section">
                     <h4>Data da Avaliação</h4>
                     <div class="form-group">
-                        <label for="evaluation-date">Data da Avaliação:</label>
+                        <label for="evaluation-date">Data de Hoje:</label>
                         <input type="date" id="evaluation-date" name="evaluation-date" required>
                     </div>
                 </div>
@@ -322,46 +272,20 @@
                 <button type="button" id="save-draft" class="btn-secondary">💾 Salvar Rascunho</button>
                 <button type="submit" class="btn-primary" id="submit-evaluation">✅ Finalizar Avaliação</button>
                 <button type="button" id="clear-form" class="btn-secondary">🗑️ Limpar Formulário</button>
-                <button type="button" id="view-results" class="btn-secondary">📊 Ver Resultados</button>
             </div>
         </form>
 
-        <!-- Seção de Resultados -->
-        <div id="results-section" class="results-section" style="display: none;">
-            <h3>Análise de Resultados</h3>
-            <div id="results-content"></div>
-            
-            <div class="charts-section">
-                <div class="chart-container full-width">
-                    <h4>Evolução por Questões</h4>
-                    <div class="chart-controls">
-                        <label for="group-selector">Selecionar Grupo:</label>
-                        <select id="group-selector">
-                            <option value="">Selecione um grupo...</option>
-                        </select>
-                    </div>
-                    <canvas id="evolutionChart"></canvas>
-                </div>
-                
-                <div class="chart-container">
-                    <h4>Comparação entre Avaliações</h4>
-                    <div class="chart-controls">
-                        <label for="comparison-group-selector">Grupo:</label>
-                        <select id="comparison-group-selector">
-                            <option value="">Selecione um grupo...</option>
-                        </select>
-                    </div>
-                    <canvas id="comparisonChart"></canvas>
-                </div>
-                
-                <div class="chart-container">
-                    <h4>Progresso Geral por Categoria</h4>
-                    <canvas id="categoryChart"></canvas>
-                </div>
+        <!-- Mensagem de Sucesso -->
+        <div id="success-message" class="success-section" style="display: none;">
+            <h3>✅ Avaliação Enviada com Sucesso!</h3>
+            <p>Obrigado por completar a avaliação. Os dados foram salvos com segurança.</p>
+            <div class="success-actions">
+                <button type="button" onclick="location.reload()" class="btn-primary">📝 Nova Avaliação</button>
+                <a href="terapeuta.html" class="btn-secondary">👨‍⚕️ Área do Terapeuta</a>
             </div>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script-pais.js"></script>
 </body>
 </html>
