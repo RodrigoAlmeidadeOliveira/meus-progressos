@@ -26,13 +26,18 @@ class FirebaseManager {
     }
 
     async saveEvaluation(data) {
+        console.log('🔥 Iniciando saveEvaluation. Firebase inicializado:', this.initialized);
+        
         if (!this.initialized) {
+            console.log('⚠️ Firebase não inicializado, salvando localmente');
             return this.saveToLocalStorage(data);
         }
 
         try {
+            console.log('🔥 Importando módulos Firestore...');
             const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
             
+            console.log('🔥 Preparando dados para salvar...');
             // Criar documento com ID baseado na data e nome do paciente
             const docData = {
                 ...data,
@@ -41,17 +46,21 @@ class FirebaseManager {
                 evaluationId: `${data.patientInfo.name.replace(/\s+/g, '_')}_${data.patientInfo.evaluationDate}`
             };
 
+            console.log('🔥 Salvando no Firebase...', docData);
             const docRef = await addDoc(collection(this.db, 'evaluations'), docData);
-            console.log('Avaliação salva no Firebase:', docRef.id);
+            console.log('✅ Avaliação salva no Firebase com sucesso:', docRef.id);
             
             // Também salvar localmente como backup
             this.saveToLocalStorage(data);
             
-            return { success: true, id: docRef.id };
+            return { success: true, id: docRef.id, firebase: true };
         } catch (error) {
-            console.error('Erro ao salvar no Firebase:', error);
+            console.error('❌ Erro ao salvar no Firebase:', error);
+            console.error('❌ Detalhes do erro:', error.message, error.code);
+            
             // Fallback para localStorage
-            return this.saveToLocalStorage(data);
+            const localResult = this.saveToLocalStorage(data);
+            return { ...localResult, firebaseError: error.message };
         }
     }
 
@@ -487,38 +496,58 @@ class ParentFormManager {
         submitButton.disabled = true;
 
         try {
+            console.log('🔥 Iniciando salvamento da avaliação...');
             const result = await this.firebaseManager.saveEvaluation(formData);
             
+            console.log('🔥 Resultado do salvamento:', result);
+            
             if (result.success) {
-                this.showSuccessMessage(result.local);
+                if (result.firebase) {
+                    this.showSuccessMessage(false, 'Firebase - Dados na nuvem!');
+                } else if (result.firebaseError) {
+                    this.showSuccessMessage(true, `Erro Firebase: ${result.firebaseError}`);
+                } else {
+                    this.showSuccessMessage(true, 'Salvo localmente');
+                }
                 localStorage.removeItem('questionnaireAutoSave'); // Limpar rascunho
             } else {
                 throw new Error('Falha ao salvar');
             }
         } catch (error) {
-            console.error('Erro ao salvar:', error);
-            alert('❌ Erro ao enviar avaliação. Tente novamente.');
+            console.error('❌ Erro crítico ao salvar:', error);
+            alert(`❌ Erro ao enviar avaliação: ${error.message}\n\nVerifique o console (F12) para mais detalhes.`);
             submitButton.textContent = originalText;
             submitButton.disabled = false;
         }
     }
 
-    showSuccessMessage(isLocal) {
+    showSuccessMessage(isLocal, details = '') {
         document.querySelector('.container > form').style.display = 'none';
         document.querySelector('.container > header').style.display = 'none';
         document.querySelector('.scale-info').style.display = 'none';
         
         const successMessage = document.getElementById('success-message');
+        
         if (isLocal) {
             successMessage.innerHTML = `
-                <h3>✅ Avaliação Salva Localmente!</h3>
-                <p>A avaliação foi salva no seu dispositivo. Para enviar ao terapeuta, será necessário configurar o Firebase ou exportar os dados.</p>
+                <h3>⚠️ Avaliação Salva Localmente!</h3>
+                <p>A avaliação foi salva no seu dispositivo. ${details}</p>
+                <div class="success-actions">
+                    <button type="button" onclick="location.reload()" class="btn-primary">📝 Nova Avaliação</button>
+                    <a href="terapeuta.html" class="btn-secondary">👨‍⚕️ Área do Terapeuta</a>
+                </div>
+            `;
+        } else {
+            successMessage.innerHTML = `
+                <h3>✅ Avaliação Enviada com Sucesso!</h3>
+                <p>Obrigado por completar a avaliação. Os dados foram salvos com segurança na nuvem. ${details}</p>
                 <div class="success-actions">
                     <button type="button" onclick="location.reload()" class="btn-primary">📝 Nova Avaliação</button>
                     <a href="terapeuta.html" class="btn-secondary">👨‍⚕️ Área do Terapeuta</a>
                 </div>
             `;
         }
+        
         successMessage.style.display = 'block';
         successMessage.scrollIntoView({ behavior: 'smooth' });
     }
