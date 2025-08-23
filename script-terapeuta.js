@@ -11,42 +11,60 @@ class FirebaseManager {
 
     async initFirebase() {
         try {
-            // Aguardar Firebase estar disponível
-            while (!window.firebase) {
-                await new Promise(resolve => setTimeout(resolve, 100));
+            // Aguardar Firebase estar disponível e inicializado
+            let attempts = 0;
+            while ((!window.firebase || !window.firebase.initialized) && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                attempts++;
             }
             
-            this.db = window.firebase.db;
-            this.initialized = true;
-            console.log('Firebase inicializado com sucesso');
+            if (window.firebase && window.firebase.initialized) {
+                this.db = window.firebase.db;
+                this.initialized = true;
+                console.log('✅ Firebase Manager inicializado com sucesso');
+            } else {
+                console.warn('⚠️ Timeout esperando Firebase - usando localStorage');
+                this.initialized = false;
+            }
         } catch (error) {
-            console.warn('Firebase não disponível, usando localStorage:', error);
+            console.warn('❌ Firebase não disponível, usando localStorage:', error);
             this.initialized = false;
         }
     }
 
     async getAllEvaluations() {
+        console.log('🔍 getAllEvaluations - Firebase initialized:', this.initialized);
+        
         if (!this.initialized) {
-            return this.getFromLocalStorage();
+            console.log('📦 Firebase não inicializado, usando localStorage');
+            return this.getLocalStorageAsArray();
         }
 
         try {
+            console.log('🔥 Importando módulos Firestore...');
             const { getDocs, collection, orderBy, query } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
             
+            console.log('🔍 Criando query para buscar evaluations...');
             const q = query(collection(this.db, 'evaluations'), orderBy('createdAt', 'desc'));
-            const querySnapshot = await getDocs(q);
-            const evaluations = [];
             
+            console.log('📡 Executando query no Firebase...');
+            const querySnapshot = await getDocs(q);
+            
+            const evaluations = [];
             querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                console.log('📄 Documento encontrado:', doc.id, data);
                 evaluations.push({
                     id: doc.id,
-                    ...doc.data()
+                    ...data
                 });
             });
             
+            console.log(`✅ Total de ${evaluations.length} avaliações encontradas no Firebase`);
             return evaluations;
         } catch (error) {
-            console.error('Erro ao buscar dados do Firebase:', error);
+            console.error('❌ Erro ao buscar dados do Firebase:', error);
+            console.log('📦 Fallback para localStorage');
             return this.getLocalStorageAsArray();
         }
     }
@@ -108,10 +126,24 @@ class TherapistDashboard {
     }
 
     async init() {
+        console.log('🚀 Inicializando Therapist Dashboard...');
+        
         this.setupEventListeners();
+        
+        // Aguardar Firebase Manager estar pronto
+        console.log('⏳ Aguardando Firebase Manager...');
+        await this.firebaseManager.initFirebase();
+        
+        console.log('📊 Carregando dados...');
         await this.loadData();
+        
+        console.log('🔢 Atualizando estatísticas...');
         this.updateStatistics();
+        
+        console.log('👥 Renderizando lista de pacientes...');
         this.renderPatientsList();
+        
+        console.log('✅ Dashboard inicializado com sucesso!');
     }
 
     setupEventListeners() {
@@ -143,11 +175,18 @@ class TherapistDashboard {
 
     async loadData() {
         try {
+            console.log('📡 Buscando avaliações...');
             this.allEvaluations = await this.firebaseManager.getAllEvaluations();
+            
+            console.log(`📊 ${this.allEvaluations.length} avaliações carregadas`);
             this.filteredEvaluations = [...this.allEvaluations];
+            
+            console.log('🔧 Populando opções de filtro...');
             this.populateFilterOptions();
+            
+            console.log('✅ Dados carregados com sucesso');
         } catch (error) {
-            console.error('Erro ao carregar dados:', error);
+            console.error('❌ Erro ao carregar dados:', error);
             this.showError('Erro ao carregar dados. Verifique a conexão.');
         }
     }
