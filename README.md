@@ -1,8 +1,8 @@
-# Sistema de Avaliação de Habilidades Comunicativas
+# Meus Progressos
 
 ## 📋 Sobre o Sistema
 
-Sistema completo para avaliação de habilidades comunicativas com 149 questões organizadas em 4 categorias principais, gráficos interativos e exportação de dados.
+Plataforma completa para acompanhar o desenvolvimento e evolução das habilidades comunicativas. Com 149 questões organizadas em 4 categorias principais, gráficos interativos e exportação de dados.
 
 ## 🚀 Opções de Hospedagem
 
