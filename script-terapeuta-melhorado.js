@@ -888,13 +888,13 @@ class TerapeutaPanelMelhorado {
                 
                 // Preencher timeline de avaliações
                 if (evaluationsTimeline) {
-                    evaluationsTimeline.innerHTML = sortedEvaluations.map(eval => `
-                        <div class="timeline-item" data-source="${eval.source}">
-                            <div class="timeline-date">${new Date(eval.patientInfo?.evaluationDate || eval.createdAt).toLocaleDateString('pt-BR')}</div>
+                    evaluationsTimeline.innerHTML = sortedEvaluations.map(evaluation => `
+                        <div class="timeline-item" data-source="${evaluation.source}">
+                            <div class="timeline-date">${new Date(evaluation.patientInfo?.evaluationDate || evaluation.createdAt).toLocaleDateString('pt-BR')}</div>
                             <div class="timeline-content">
-                                <div class="timeline-evaluator">Avaliador: ${eval.evaluatorInfo?.name || 'Não informado'}</div>
-                                <div class="timeline-score">Pontuação: ${this.calculateAverageScore([eval]).toFixed(1)}</div>
-                                <div class="timeline-source">${eval.source === 'firebase' ? '☁️ Nuvem' : '💾 Local'}</div>
+                                <div class="timeline-evaluator">Avaliador: ${evaluation.evaluatorInfo?.name || 'Não informado'}</div>
+                                <div class="timeline-score">Pontuação: ${this.calculateAverageScore([evaluation]).toFixed(1)}</div>
+                                <div class="timeline-source">${evaluation.source === 'firebase' ? '☁️ Nuvem' : '💾 Local'}</div>
                             </div>
                         </div>
                     `).join('');
