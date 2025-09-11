@@ -54,7 +54,7 @@ class ReportsManager {
         // Carregar Chart.js se não estiver carregado
         return new Promise((resolve, reject) => {
             const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js';
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
             script.onload = () => {
                 console.log('✅ Chart.js carregado com sucesso');
                 resolve();
@@ -292,15 +292,18 @@ class ReportsManager {
                 this.generateReport(this.reportTypes.EVOLUTION);
             }
         } finally {
-            // Liberar o lock após um delay
+            // Liberar o lock após um delay menor
             setTimeout(() => {
                 this.isGeneratingReports = false;
-            }, 1000);
+                console.log('🔓 Lock de relatórios liberado');
+            }, 500);
         }
     }
 
     updateReports() {
-        this.generateDefaultReports();
+        if (!this.isGeneratingReports) {
+            this.generateDefaultReports();
+        }
     }
 
     generateReport(reportType) {

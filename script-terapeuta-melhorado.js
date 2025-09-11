@@ -700,6 +700,8 @@ class TerapeutaPanelMelhorado {
     }
 
     populateEvaluationsList(evaluations) {
+        console.log(`👥 Terapeuta: Populando lista com ${evaluations.length} avaliações`);
+        
         const listContainer = document.getElementById('patients-list');
         if (!listContainer) {
             console.error('❌ Terapeuta: Elemento patients-list não encontrado');
@@ -707,6 +709,7 @@ class TerapeutaPanelMelhorado {
         }
 
         if (evaluations.length === 0) {
+            console.log('⚠️ Terapeuta: Nenhuma avaliação para mostrar');
             listContainer.innerHTML = `
                 <div class="no-data">
                     <p>📝 Nenhuma avaliação encontrada</p>
@@ -718,10 +721,17 @@ class TerapeutaPanelMelhorado {
 
         // Agrupar avaliações por paciente
         const patientGroups = this.groupEvaluationsByPatient(evaluations);
-        listContainer.innerHTML = Object.values(patientGroups).map(patientGroup => this.createPatientCard(patientGroup)).join('');
+        console.log('👥 Terapeuta: Grupos de pacientes:', Object.keys(patientGroups));
+        
+        const cardsHTML = Object.values(patientGroups).map(patientGroup => this.createPatientCard(patientGroup)).join('');
+        console.log(`👥 Terapeuta: Gerando ${Object.keys(patientGroups).length} cartões de pacientes`);
+        
+        listContainer.innerHTML = cardsHTML;
         
         // Adicionar event listeners para as ações
         this.attachCardEventListeners();
+        
+        console.log('✅ Terapeuta: Lista de pacientes atualizada');
     }
 
     groupEvaluationsByPatient(evaluations) {
