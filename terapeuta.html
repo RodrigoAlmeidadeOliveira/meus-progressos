@@ -245,6 +245,169 @@
         </div>
     </div>
 
-    <script src="script-terapeuta.js"></script>
+    <!-- Script melhorado com verificação de conexão e backup -->
+    <script src="script-terapeuta-melhorado.js"></script>
+    
+    <!-- Indicadores de status e notificações -->
+    <style>
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 9999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .sync-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px 12px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 12px;
+            color: #666;
+            z-index: 1000;
+        }
+        
+        .data-source-legend {
+            display: flex;
+            gap: 15px;
+            margin: 10px 0;
+            font-size: 12px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .legend-item::before {
+            content: '';
+            width: 12px;
+            height: 3px;
+            border-radius: 2px;
+        }
+        
+        .legend-item.cloud::before {
+            background: #28a745;
+        }
+        
+        .legend-item.local::before {
+            background: #ffc107;
+        }
+        
+        .status-bar {
+            background: #f8f9fa;
+            border-radius: 5px;
+            padding: 10px 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status-item {
+            text-align: center;
+        }
+        
+        .status-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .status-label {
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .sync-actions {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .btn-sync {
+            background: #17a2b8;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .btn-sync:hover {
+            background: #138496;
+        }
+        
+        .btn-sync:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+    
+    <div class="sync-info">
+        ⚡ Sincronização automática • Última atualização: <span id="last-sync-time">--:--</span>
+    </div>
+    
+    <!-- Adicionar barra de status na seção de estatísticas -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Adicionar barra de status após as estatísticas
+            const statsSection = document.querySelector('.stats-grid');
+            if (statsSection) {
+                const statusBar = document.createElement('div');
+                statusBar.className = 'status-bar';
+                statusBar.innerHTML = `
+                    <div class="status-item">
+                        <div class="status-number" id="firebase-count">0</div>
+                        <div class="status-label">Na Nuvem</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-number" id="local-count">0</div>
+                        <div class="status-label">Local</div>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-number" id="recent-evaluations">0</div>
+                        <div class="status-label">Últimos 7 dias</div>
+                    </div>
+                `;
+                statsSection.parentNode.insertBefore(statusBar, statsSection.nextSibling);
+            }
+            
+            // Adicionar botões de sincronização
+            const controlsSection = document.querySelector('.view-controls');
+            if (controlsSection) {
+                const syncActions = document.createElement('div');
+                syncActions.className = 'sync-actions';
+                syncActions.innerHTML = `
+                    <button id="sync-data" class="btn-sync">🔄 Sincronizar</button>
+                    <button id="refresh-data" class="btn-sync">♻️ Atualizar</button>
+                `;
+                controlsSection.appendChild(syncActions);
+            }
+            
+            // Adicionar legenda de fontes de dados
+            const evaluationsList = document.getElementById('evaluations-list');
+            if (evaluationsList && evaluationsList.parentNode) {
+                const legend = document.createElement('div');
+                legend.className = 'data-source-legend';
+                legend.innerHTML = `
+                    <div class="legend-item cloud">☁️ Dados na Nuvem</div>
+                    <div class="legend-item local">💾 Dados Locais</div>
+                `;
+                evaluationsList.parentNode.insertBefore(legend, evaluationsList);
+            }
+        });
+    </script>
 </body>
 </html>
