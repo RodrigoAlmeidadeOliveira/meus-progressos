@@ -180,39 +180,56 @@ class FirebaseManagerTerapeutaMelhorado {
             return { success: false, reason: 'Firebase offline' };
         }
 
-        console.log('🔄 Terapeuta: Iniciando sincronização de dados pendentes...');
+        console.log('🔄 Terapeuta: Iniciando sincronização MELHORADA de dados pendentes...');
         
+        // MELHORIA: Buscar dados do Firebase primeiro para comparação robusta
+        const cloudData = await this.getFirebaseData();
         const localData = this.getLocalStorageAsArray();
+        
+        console.log(`📊 Dados: ${cloudData.length} no Firebase, ${localData.length} locais`);
+        
         let synced = 0;
         let errors = 0;
+        let skipped = 0;
         
-        for (const item of localData) {
-            // Verificar se já existe no Firebase
-            if (!item.id || item.localOnly) {
-                try {
-                    const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-                    
-                    const docData = {
-                        ...item,
-                        syncedAt: new Date().toISOString(),
-                        syncedFrom: 'terapeuta-local'
-                    };
-                    
-                    const docRef = await addDoc(collection(this.db, 'evaluations'), docData);
-                    console.log(`✅ Terapeuta: Sincronizado ${item.patientInfo?.name} - ID: ${docRef.id}`);
-                    synced++;
-                } catch (error) {
-                    console.error('❌ Terapeuta: Erro ao sincronizar:', error);
-                    errors++;
-                }
+        for (const localItem of localData) {
+            // MELHORIA: Verificação mais robusta de duplicados
+            const isDuplicate = await this.checkIfExistsInFirebase(localItem, cloudData);
+            
+            if (isDuplicate) {
+                console.log(`⏭️ Pulando ${localItem.patientInfo?.name} - já existe no Firebase`);
+                skipped++;
+                continue;
+            }
+            
+            try {
+                const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                
+                // MELHORIA: Limpar dados antes do envio
+                const cleanedData = this.cleanDataForSync(localItem);
+                
+                const docRef = await addDoc(collection(this.db, 'evaluations'), cleanedData);
+                console.log(`✅ Sincronizado: ${localItem.patientInfo?.name} - ID: ${docRef.id}`);
+                synced++;
+                
+                // MELHORIA: Marcar como sincronizado no localStorage
+                this.markAsSynced(localItem, docRef.id);
+                
+            } catch (error) {
+                console.error('❌ Erro ao sincronizar:', error);
+                errors++;
             }
         }
         
-        return { success: true, synced, errors };
+        console.log(`✅ Sincronização completa: ${synced} enviados, ${skipped} pulados, ${errors} erros`);
+        return { success: true, synced, errors, skipped };
     }
 
     getLocalStorageAsArray() {
         const localData = [];
+        const seenItems = new Set(); // Evitar duplicados
+        
+        console.log('🔍 Escaneando localStorage para dados...');
         
         // Buscar em questionnaireData (formato dos pais)
         const questionnaireData = localStorage.getItem('questionnaireData');
@@ -220,13 +237,18 @@ class FirebaseManagerTerapeutaMelhorado {
             try {
                 const parsed = JSON.parse(questionnaireData);
                 Object.values(parsed).forEach(item => {
-                    localData.push({
-                        ...item,
-                        source: 'localStorage-questionnaire'
-                    });
+                    const key = this.generateItemKey(item);
+                    if (!seenItems.has(key)) {
+                        localData.push({
+                            ...item,
+                            source: 'localStorage-questionnaire'
+                        });
+                        seenItems.add(key);
+                    }
                 });
+                console.log(`💾 Encontrados ${Object.keys(parsed).length} itens em questionnaireData`);
             } catch (e) {
-                console.warn('Erro ao parsear questionnaireData:', e);
+                console.warn('❌ Erro ao parsear questionnaireData:', e);
             }
         }
         
@@ -237,35 +259,166 @@ class FirebaseManagerTerapeutaMelhorado {
                 const parsed = JSON.parse(evaluations);
                 if (Array.isArray(parsed)) {
                     parsed.forEach(item => {
-                        localData.push({
-                            ...item,
-                            source: 'localStorage-evaluations'
-                        });
+                        const key = this.generateItemKey(item);
+                        if (!seenItems.has(key)) {
+                            localData.push({
+                                ...item,
+                                source: 'localStorage-evaluations'
+                            });
+                            seenItems.add(key);
+                        }
                     });
                 }
+                console.log(`💾 Encontrados ${parsed.length} itens em evaluations`);
             } catch (e) {
-                console.warn('Erro ao parsear evaluations:', e);
+                console.warn('❌ Erro ao parsear evaluations:', e);
             }
         }
 
-        // Buscar backups individuais
+        // Buscar backups individuais e outros padrões
         for (let i = 0; i < localStorage.length; i++) {
             const key = localStorage.key(i);
-            if (key.startsWith('backup_evaluation_')) {
+            if (key.startsWith('backup_evaluation_') || 
+                key.startsWith('evaluation_') || 
+                key.startsWith('patient_')) {
                 try {
                     const item = JSON.parse(localStorage.getItem(key));
-                    localData.push({
-                        ...item,
-                        source: 'localStorage-backup',
-                        backupKey: key
-                    });
+                    if (item && item.patientInfo) {
+                        const itemKey = this.generateItemKey(item);
+                        if (!seenItems.has(itemKey)) {
+                            localData.push({
+                                ...item,
+                                source: 'localStorage-backup',
+                                backupKey: key
+                            });
+                            seenItems.add(itemKey);
+                        }
+                    }
                 } catch (e) {
-                    console.warn(`Erro ao parsear backup ${key}:`, e);
+                    console.warn(`❌ Erro ao parsear ${key}:`, e);
                 }
             }
         }
 
+        console.log(`📊 Total de ${localData.length} itens únicos encontrados no localStorage`);
         return localData;
+    }
+
+    // NOVOS MÉTODOS AUXILIARES PARA SINCRONIZAÇÃO MELHORADA
+    generateItemKey(item) {
+        // Gerar chave única para identificar itens
+        const name = item.patientInfo?.name || 'unknown';
+        const date = item.patientInfo?.evaluationDate || item.createdAt || Date.now();
+        const responses = JSON.stringify(item.responses || {});
+        return `${name}_${date}_${responses.slice(0, 50)}`;
+    }
+
+    async getFirebaseData() {
+        try {
+            const { getDocs, collection, orderBy, query } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            
+            const q = query(collection(this.db, 'evaluations'), orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+            
+            const cloudData = [];
+            querySnapshot.forEach((doc) => {
+                cloudData.push({
+                    id: doc.id,
+                    ...doc.data()
+                });
+            });
+            
+            return cloudData;
+        } catch (error) {
+            console.warn('⚠️ Erro ao buscar dados do Firebase:', error);
+            return [];
+        }
+    }
+
+    async checkIfExistsInFirebase(localItem, cloudData) {
+        // Verificação robusta de existência
+        const itemKey = this.generateItemKey(localItem);
+        
+        return cloudData.some(cloudItem => {
+            const cloudKey = this.generateItemKey(cloudItem);
+            return cloudKey === itemKey;
+        });
+    }
+
+    cleanDataForSync(localItem) {
+        // Limpar dados antes de enviar para Firebase
+        const cleaned = {
+            patientInfo: localItem.patientInfo,
+            evaluatorInfo: localItem.evaluatorInfo,
+            responses: localItem.responses,
+            groupScores: localItem.groupScores,
+            totalScore: localItem.totalScore,
+            createdAt: localItem.createdAt || new Date().toISOString(),
+            syncedAt: new Date().toISOString(),
+            syncedFrom: 'terapeuta-local-improved'
+        };
+        
+        // Remover propriedades desnecessárias
+        delete cleaned.source;
+        delete cleaned.localOnly;
+        delete cleaned.backupKey;
+        delete cleaned.id; // Firebase gerará novo ID
+        
+        return cleaned;
+    }
+
+    markAsSynced(localItem, firebaseId) {
+        // Marcar item como sincronizado no localStorage
+        try {
+            if (localItem.backupKey) {
+                const updated = {
+                    ...localItem,
+                    syncedToFirebase: true,
+                    firebaseId: firebaseId,
+                    syncedAt: new Date().toISOString()
+                };
+                localStorage.setItem(localItem.backupKey, JSON.stringify(updated));
+            }
+        } catch (error) {
+            console.warn('⚠️ Erro ao marcar como sincronizado:', error);
+        }
+    }
+
+    // MÉTODO PARA SINCRONIZAÇÃO FORÇADA MANUAL
+    async forceSyncAllLocalData() {
+        console.log('🚀 SINCRONIZAÇÃO FORÇADA: Enviando TODOS os dados locais...');
+        
+        if (!this.initialized || this.connectionStatus !== 'connected') {
+            throw new Error('Firebase não conectado');
+        }
+        
+        const localData = this.getLocalStorageAsArray();
+        let synced = 0;
+        let errors = 0;
+        
+        for (const localItem of localData) {
+            try {
+                const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                
+                const cleanedData = {
+                    ...this.cleanDataForSync(localItem),
+                    forceSynced: true,
+                    forceSyncAt: new Date().toISOString()
+                };
+                
+                const docRef = await addDoc(collection(this.db, 'evaluations'), cleanedData);
+                console.log(`🚀 FORÇADO: ${localItem.patientInfo?.name} - ID: ${docRef.id}`);
+                synced++;
+                
+                this.markAsSynced(localItem, docRef.id);
+                
+            } catch (error) {
+                console.error('❌ Erro na sincronização forçada:', error);
+                errors++;
+            }
+        }
+        
+        return { synced, errors, total: localData.length };
     }
 
     removeFromLocalStorage(evaluationId) {
@@ -431,6 +584,14 @@ class TerapeutaPanelMelhorado {
         if (syncButton) {
             syncButton.addEventListener('click', () => {
                 this.syncPendingDataIfNeeded();
+            });
+        }
+
+        // Force sync button
+        const forceSyncButton = document.getElementById('force-sync-data');
+        if (forceSyncButton) {
+            forceSyncButton.addEventListener('click', () => {
+                this.forceSyncAllData();
             });
         }
 
@@ -641,6 +802,7 @@ class TerapeutaPanelMelhorado {
     async syncPendingDataIfNeeded() {
         if (this.firebaseManager.connectionStatus !== 'connected') {
             console.log('⚠️ Terapeuta: Não é possível sincronizar - offline');
+            this.showNotification('Não é possível sincronizar - Firebase offline', 'warning');
             return;
         }
 
@@ -651,18 +813,60 @@ class TerapeutaPanelMelhorado {
             const result = await this.firebaseManager.syncPendingData();
             
             if (result.success && result.synced > 0) {
-                this.showNotification(`${result.synced} avaliação(ões) sincronizada(s)`, 'success');
+                this.showNotification(`✅ ${result.synced} avaliação(ões) sincronizada(s) com sucesso`, 'success');
                 this.refreshData(true); // Refresh silencioso após sync
             } else if (result.synced === 0) {
+                this.showNotification('✅ Todos os dados já estão sincronizados', 'success');
                 console.log('✅ Terapeuta: Todos os dados já estão sincronizados');
             }
             
+            if (result.skipped > 0) {
+                console.log(`ℹ️ ${result.skipped} item(ns) pulados (já existem no Firebase)`);
+            }
+            
             if (result.errors > 0) {
-                this.showNotification(`${result.errors} erro(s) na sincronização`, 'warning');
+                this.showNotification(`⚠️ ${result.errors} erro(s) na sincronização`, 'warning');
             }
         } catch (error) {
             console.error('❌ Terapeuta: Erro na sincronização:', error);
-            this.showNotification('Erro na sincronização', 'error');
+            this.showNotification('❌ Erro na sincronização: ' + error.message, 'error');
+        }
+    }
+
+    async forceSyncAllData() {
+        const confirmMessage = 'ATENÇÃO: Esta operação irá enviar TODOS os dados locais para o Firebase, mesmo que já existam duplicados.\n\nEsta é uma operação de emergência. Tem certeza?';
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        if (this.firebaseManager.connectionStatus !== 'connected') {
+            this.showNotification('❌ Firebase não conectado - não é possível sincronizar', 'error');
+            return;
+        }
+
+        console.log('🚀 FORÇANDO sincronização de todos os dados...');
+        this.showLoading(true);
+        this.showNotification('🚀 Sincronização forçada iniciada...', 'info');
+        
+        try {
+            const result = await this.firebaseManager.forceSyncAllLocalData();
+            
+            this.showNotification(
+                `🚀 Sincronização forçada completa:\n✅ ${result.synced} enviados\n❌ ${result.errors} erros\n📊 Total: ${result.total}`, 
+                result.errors > 0 ? 'warning' : 'success'
+            );
+            
+            console.log('🚀 Resultado da sincronização forçada:', result);
+            
+            // Refresh dados após sync forçada
+            this.refreshData(true);
+            
+        } catch (error) {
+            console.error('❌ Erro na sincronização forçada:', error);
+            this.showNotification('❌ Erro na sincronização forçada: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
         }
     }
 
