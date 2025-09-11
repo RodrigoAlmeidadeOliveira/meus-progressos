@@ -7,6 +7,7 @@ class ReportsManager {
         this.currentData = [];
         this.selectedPatient = null;
         this.selectedDateRange = null;
+        this.isGeneratingReports = false;
         this.reportTypes = {
             GENERAL: 'geral',
             BY_GROUP: 'por_grupo', 
@@ -115,9 +116,118 @@ class ReportsManager {
 
     async setData(evaluations) {
         console.log(`📊 Carregando ${evaluations.length} avaliações para relatórios`);
-        this.currentData = evaluations;
+        
+        // Processar dados para o formato esperado pelos relatórios
+        this.currentData = this.processEvaluationsData(evaluations);
+        console.log(`📊 Dados processados:`, this.currentData);
+        
         this.populatePatientSelector();
         this.generateDefaultReports();
+    }
+
+    processEvaluationsData(evaluations) {
+        return evaluations.map(evaluation => {
+            // Se já tem groupScores, usar como está
+            if (evaluation.groupScores) {
+                return evaluation;
+            }
+
+            // Se tem responses, converter para groupScores
+            if (evaluation.responses) {
+                const processedEvaluation = { ...evaluation };
+                processedEvaluation.groupScores = this.convertResponsesToGroupScores(evaluation.responses);
+                return processedEvaluation;
+            }
+
+            return evaluation;
+        });
+    }
+
+    convertResponsesToGroupScores(responses) {
+        // Mapear questões para subgrupos (baseado no formulário original)
+        const questionToSubgroupMap = {
+            // Habilidades Comunicativas
+            'q1': 'Contato Visual',
+            'q2': 'Contato Visual', 
+            'q3': 'Comunicação Alternativa',
+            'q4': 'Comunicação Alternativa',
+            'q5': 'Linguagem Expressiva',
+            'q6': 'Linguagem Expressiva',
+            'q7': 'Linguagem Receptiva',
+            'q8': 'Linguagem Receptiva',
+            
+            // Habilidades Sociais  
+            'q9': 'Expressão Facial',
+            'q10': 'Expressão Facial',
+            'q11': 'Imitação',
+            'q12': 'Imitação',
+            'q13': 'Atenção Compartilhada',
+            'q14': 'Atenção Compartilhada',
+            'q15': 'Brincar',
+            'q16': 'Brincar',
+            
+            // Habilidades Funcionais
+            'q17': 'Auto Cuidado',
+            'q18': 'Auto Cuidado',
+            'q19': 'Vestir-se',
+            'q20': 'Vestir-se',
+            'q21': 'Uso do Banheiro',
+            'q22': 'Uso do Banheiro',
+            
+            // Habilidades Emocionais
+            'q23': 'Controle Inibitório',
+            'q24': 'Controle Inibitório',
+            'q25': 'Flexibilidade',
+            'q26': 'Flexibilidade',
+            'q27': 'Resposta Emocional',
+            'q28': 'Resposta Emocional',
+            'q29': 'Empatia',
+            'q30': 'Empatia'
+        };
+
+        const subgroupScores = {};
+
+        // Agrupar respostas por subgrupo
+        Object.entries(responses).forEach(([questionId, score]) => {
+            const subgroup = questionToSubgroupMap[questionId];
+            if (subgroup) {
+                if (!subgroupScores[subgroup]) {
+                    subgroupScores[subgroup] = {
+                        scores: [],
+                        category: this.getSubgroupCategory(subgroup)
+                    };
+                }
+                subgroupScores[subgroup].scores.push(parseInt(score));
+            }
+        });
+
+        // Calcular estatísticas por subgrupo
+        const groupScores = {};
+        Object.entries(subgroupScores).forEach(([subgroup, data]) => {
+            const scores = data.scores;
+            const total = scores.reduce((sum, score) => sum + score, 0);
+            const max = scores.length * 5; // Assumindo escala 1-5
+            const percentage = Math.round((total / max) * 100);
+
+            groupScores[subgroup] = {
+                total,
+                max,
+                percentage,
+                average: Math.round(total / scores.length * 10) / 10,
+                category: data.category
+            };
+        });
+
+        return groupScores;
+    }
+
+    getSubgroupCategory(subgroup) {
+        for (const [category, info] of Object.entries(this.groupMapping)) {
+            if (info.subgroups.includes(subgroup)) {
+                return category;
+            }
+        }
+        return 'Outros';
     }
 
     populatePatientSelector() {
@@ -165,12 +275,27 @@ class ReportsManager {
     }
 
     generateDefaultReports() {
-        this.generateReport(this.reportTypes.GENERAL);
-        this.generateReport(this.reportTypes.BY_GROUP);
-        this.generateReport(this.reportTypes.BY_SUBGROUP);
+        if (this.isGeneratingReports) {
+            console.log('⚠️ Relatórios já sendo gerados, ignorando...');
+            return;
+        }
         
-        if (this.selectedPatient) {
-            this.generateReport(this.reportTypes.EVOLUTION);
+        this.isGeneratingReports = true;
+        console.log('📊 Gerando relatórios padrão...');
+        
+        try {
+            this.generateReport(this.reportTypes.GENERAL);
+            this.generateReport(this.reportTypes.BY_GROUP);
+            this.generateReport(this.reportTypes.BY_SUBGROUP);
+            
+            if (this.selectedPatient) {
+                this.generateReport(this.reportTypes.EVOLUTION);
+            }
+        } finally {
+            // Liberar o lock após um delay
+            setTimeout(() => {
+                this.isGeneratingReports = false;
+            }, 1000);
         }
     }
 
@@ -518,9 +643,13 @@ class ReportsManager {
     createBarChart(canvasId, config) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
-            console.warn(`Canvas ${canvasId} não encontrado`);
+            console.warn(`❌ Canvas ${canvasId} não encontrado`);
+            console.log('📋 Elementos canvas disponíveis:', 
+                Array.from(document.querySelectorAll('canvas')).map(c => c.id));
             return;
         }
+        
+        console.log(`📊 Criando gráfico de barras para ${canvasId}`, config);
 
         // Destruir gráfico existente
         if (this.charts[canvasId]) {
