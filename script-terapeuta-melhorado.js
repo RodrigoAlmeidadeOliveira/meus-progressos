@@ -373,12 +373,23 @@ class TerapeutaPanelMelhorado {
         this.setupEventListeners();
         this.setupConnectionMonitor();
         this.setupAutoRefresh();
+        this.initializeReportsManager();
         this.loadDashboard();
         
         // Aguardar Firebase e fazer primeira sincronização
         setTimeout(() => {
             this.syncPendingDataIfNeeded();
         }, 3000);
+    }
+
+    initializeReportsManager() {
+        // Inicializar gerenciador de relatórios
+        if (typeof ReportsManager !== 'undefined') {
+            window.reportsManager = new ReportsManager();
+            console.log('📊 Sistema de relatórios inicializado');
+        } else {
+            console.warn('⚠️ ReportsManager não encontrado');
+        }
     }
 
     setupEventListeners() {
@@ -571,6 +582,11 @@ class TerapeutaPanelMelhorado {
             this.populateEvaluationsList(evaluations);
             this.updateLastSyncTime();
             
+            // Atualizar sistema de relatórios
+            if (window.reportsManager) {
+                window.reportsManager.setData(evaluations);
+            }
+            
             console.log(`✅ Terapeuta: Dashboard carregado - ${evaluations.length} avaliações`);
         } catch (error) {
             console.error('❌ Terapeuta: Erro ao carregar dashboard:', error);
@@ -593,6 +609,11 @@ class TerapeutaPanelMelhorado {
             this.updateStatistics(evaluations);
             this.populateEvaluationsList(evaluations);
             this.updateLastSyncTime();
+            
+            // Atualizar sistema de relatórios
+            if (window.reportsManager) {
+                window.reportsManager.setData(evaluations);
+            }
             
             if (!silent) {
                 this.showNotification('Dados atualizados', 'success');

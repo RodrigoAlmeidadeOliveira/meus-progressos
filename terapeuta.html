@@ -192,37 +192,115 @@
                 </div>
             </div>
 
-            <!-- Relatórios e Exportação -->
-            <div class="reports-section">
-                <h3>📊 Relatórios e Exportação</h3>
-                <div class="reports-grid">
-                    <div class="report-card">
-                        <h4>📈 Relatório Geral</h4>
-                        <p>Estatísticas completas de todos os pacientes</p>
-                        <button type="button" id="export-general-report" class="btn-primary">Exportar CSV</button>
-                    </div>
-                    <div class="report-card">
-                        <h4>📋 Relatório por Período</h4>
-                        <p>Avaliações em período específico</p>
-                        <div class="period-inputs">
-                            <input type="date" id="report-date-from" class="small-input">
-                            <input type="date" id="report-date-to" class="small-input">
-                        </div>
-                        <button type="button" id="export-period-report" class="btn-primary">Exportar CSV</button>
-                    </div>
-                    <div class="report-card">
-                        <h4>👥 Relatório por Avaliador</h4>
-                        <p>Dados organizados por responsável</p>
-                        <select id="report-evaluator-selector" class="small-input">
-                            <option value="">Selecione avaliador...</option>
+            <!-- Sistema de Relatórios Completo -->
+            <div id="reports-view" class="view-content">
+                <div class="reports-header">
+                    <h2>📊 Relatórios de Evolução</h2>
+                    <p>Análise detalhada do progresso dos pacientes com gráficos e exportação PDF</p>
+                </div>
+
+                <!-- Filtros de Relatórios -->
+                <div class="reports-filters">
+                    <div class="filter-group">
+                        <label for="report-patient-select">👤 Paciente:</label>
+                        <select id="report-patient-select" class="filter-input">
+                            <option value="">Todos os pacientes</option>
                         </select>
-                        <button type="button" id="export-evaluator-report" class="btn-primary">Exportar CSV</button>
                     </div>
-                    <div class="report-card">
-                        <h4>🔄 Backup Completo</h4>
-                        <p>Todos os dados do sistema</p>
-                        <button type="button" id="export-backup" class="btn-primary">Download Backup</button>
+                    
+                    <div class="filter-group">
+                        <label for="report-date-from">📅 Data Inicial:</label>
+                        <input type="date" id="report-date-from" class="filter-input">
                     </div>
+                    
+                    <div class="filter-group">
+                        <label for="report-date-to">📅 Data Final:</label>
+                        <input type="date" id="report-date-to" class="filter-input">
+                    </div>
+                    
+                    <div class="filter-actions">
+                        <button id="clear-report-filters" class="btn-secondary">🗑️ Limpar Filtros</button>
+                        <button id="apply-report-filters" class="btn-primary">🔍 Aplicar Filtros</button>
+                    </div>
+                </div>
+
+                <!-- Abas de Relatórios -->
+                <div class="reports-tabs">
+                    <button class="tab-btn active" data-tab="general">📈 Geral</button>
+                    <button class="tab-btn" data-tab="groups">📊 Por Grupos</button>
+                    <button class="tab-btn" data-tab="subgroups">🎯 Por Subgrupos</button>
+                    <button class="tab-btn" data-tab="evolution">📈 Evolução</button>
+                </div>
+
+                <!-- Conteúdo das Abas -->
+                <div class="reports-content">
+                    
+                    <!-- Relatório Geral -->
+                    <div id="general-tab" class="report-tab active">
+                        <div class="report-header">
+                            <h3>📊 Relatório Geral</h3>
+                            <button class="export-btn" data-export-pdf="geral">📄 Exportar PDF</button>
+                        </div>
+                        <div class="report-body">
+                            <div class="chart-container">
+                                <canvas id="general-chart" width="800" height="400"></canvas>
+                            </div>
+                            <div id="general-stats" class="stats-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- Relatório por Grupos -->
+                    <div id="groups-tab" class="report-tab">
+                        <div class="report-header">
+                            <h3>📊 Relatório por Grupos de Habilidades</h3>
+                            <button class="export-btn" data-export-pdf="por_grupo">📄 Exportar PDF</button>
+                        </div>
+                        <div class="report-body">
+                            <div class="chart-container">
+                                <canvas id="groups-chart" width="800" height="400"></canvas>
+                            </div>
+                            <div id="groups-stats" class="stats-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- Relatório por Subgrupos -->
+                    <div id="subgroups-tab" class="report-tab">
+                        <div class="report-header">
+                            <h3>🎯 Relatório por Subgrupos</h3>
+                            <button class="export-btn" data-export-pdf="por_subgrupo">📄 Exportar PDF</button>
+                        </div>
+                        <div class="report-body">
+                            <div class="chart-container">
+                                <canvas id="subgroups-chart" width="800" height="400"></canvas>
+                            </div>
+                            <div id="subgroups-stats" class="stats-container"></div>
+                        </div>
+                    </div>
+
+                    <!-- Relatório de Evolução -->
+                    <div id="evolution-tab" class="report-tab">
+                        <div class="report-header">
+                            <h3>📈 Evolução Temporal</h3>
+                            <button class="export-btn" data-export-pdf="evolucao">📄 Exportar PDF</button>
+                        </div>
+                        <div class="report-body">
+                            <div class="evolution-notice">
+                                <p>💡 <strong>Dica:</strong> Selecione um paciente específico para visualizar sua evolução ao longo do tempo.</p>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="evolution-chart" width="800" height="400"></canvas>
+                            </div>
+                            <div id="evolution-stats" class="stats-container"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ações Globais -->
+                <div class="global-actions">
+                    <button id="export-complete-report" class="btn-primary large" data-export-pdf="complete">
+                        📋 Exportar Relatório Completo (PDF)
+                    </button>
+                    <button id="refresh-reports" class="btn-secondary">🔄 Atualizar Relatórios</button>
                 </div>
             </div>
         </div>
@@ -247,6 +325,11 @@
 
     <!-- Script melhorado com verificação de conexão e backup -->
     <script src="script-terapeuta-melhorado.js"></script>
+    
+    <!-- Sistema de Relatórios -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="reports-manager.js"></script>
     
     <!-- Indicadores de status e notificações -->
     <style>
@@ -353,6 +436,264 @@
             background: #ccc;
             cursor: not-allowed;
         }
+
+        /* Estilos para Sistema de Relatórios */
+        .reports-header {
+            text-align: center;
+            margin-bottom: 2rem;
+            padding: 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 10px;
+        }
+
+        .reports-filters {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            min-width: 200px;
+        }
+
+        .filter-group label {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .filter-input {
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            font-size: 1rem;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .reports-tabs {
+            display: flex;
+            border-bottom: 2px solid #e9ecef;
+            margin-bottom: 2rem;
+            gap: 0.5rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 1rem 1.5rem;
+            cursor: pointer;
+            border-radius: 10px 10px 0 0;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+
+        .tab-btn:hover {
+            background: #e9ecef;
+        }
+
+        .tab-btn.active {
+            background: #007bff;
+            color: white;
+        }
+
+        .report-tab {
+            display: none;
+            min-height: 400px;
+        }
+
+        .report-tab.active {
+            display: block;
+        }
+
+        .report-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid #e9ecef;
+        }
+
+        .report-header h3 {
+            margin: 0;
+            color: #495057;
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+        }
+
+        .chart-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+            min-height: 400px;
+        }
+
+        .chart-container canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-item {
+            background: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #007bff;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #007bff;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-description {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        .evolution-notice {
+            background: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            color: #1976d2;
+        }
+
+        .global-actions {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .btn-primary.large {
+            font-size: 1.2rem;
+            padding: 1rem 2rem;
+            margin-right: 1rem;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .modal-body {
+            padding: 2rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+            padding: 1.5rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .close-button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .close-button:hover {
+            background: #c82333;
+        }
+
+        /* Responsividade para relatórios */
+        @media (max-width: 768px) {
+            .reports-filters {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filter-group {
+                min-width: auto;
+            }
+
+            .reports-tabs {
+                flex-wrap: wrap;
+            }
+
+            .tab-btn {
+                flex: 1;
+                min-width: 120px;
+            }
+
+            .report-header {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+        }
     </style>
     
     <div class="sync-info">
@@ -391,7 +732,7 @@
                 syncActions.className = 'sync-actions';
                 syncActions.innerHTML = `
                     <button id="sync-data" class="btn-sync">🔄 Sincronizar</button>
-                    <button id="refresh-data" class="btn-sync">♻️ Atualizar</button>
+                    <button id="refresh-data-btn" class="btn-sync">♻️ Atualizar</button>
                 `;
                 controlsSection.appendChild(syncActions);
             }
@@ -407,6 +748,82 @@
                 `;
                 evaluationsList.parentNode.insertBefore(legend, evaluationsList);
             }
+        });
+    </script>
+
+    <!-- Inicialização do Sistema de Relatórios -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Aguardar carregamento completo dos scripts
+            setTimeout(() => {
+                if (window.reportsManager) {
+                    console.log('✅ Sistema de relatórios inicializado');
+                    
+                    // Configurar eventos dos botões de relatório
+                    const tabButtons = document.querySelectorAll('.tab-btn');
+                    tabButtons.forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const tabId = this.dataset.tab;
+                            window.reportsManager.showTab(tabId);
+                            
+                            // Remover classe active de todos os botões
+                            tabButtons.forEach(b => b.classList.remove('active'));
+                            this.classList.add('active');
+                            
+                            // Mostrar aba correspondente
+                            document.querySelectorAll('.report-tab').forEach(tab => {
+                                tab.classList.remove('active');
+                            });
+                            document.getElementById(tabId + '-tab').classList.add('active');
+                        });
+                    });
+                    
+                    // Configurar filtros de relatório
+                    const applyFiltersBtn = document.getElementById('apply-report-filters');
+                    const clearFiltersBtn = document.getElementById('clear-report-filters');
+                    
+                    if (applyFiltersBtn) {
+                        applyFiltersBtn.addEventListener('click', () => {
+                            const patientSelect = document.getElementById('report-patient-select');
+                            const dateFrom = document.getElementById('report-date-from');
+                            const dateTo = document.getElementById('report-date-to');
+                            
+                            window.reportsManager.applyFilters({
+                                patient: patientSelect?.value || '',
+                                dateFrom: dateFrom?.value || '',
+                                dateTo: dateTo?.value || ''
+                            });
+                        });
+                    }
+                    
+                    if (clearFiltersBtn) {
+                        clearFiltersBtn.addEventListener('click', () => {
+                            document.getElementById('report-patient-select').value = '';
+                            document.getElementById('report-date-from').value = '';
+                            document.getElementById('report-date-to').value = '';
+                            window.reportsManager.clearFilters();
+                        });
+                    }
+                    
+                    // Configurar botões de exportação PDF
+                    document.querySelectorAll('.export-btn, #export-complete-report').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const reportType = this.dataset.exportPdf || 'complete';
+                            window.reportsManager.exportToPDF(reportType);
+                        });
+                    });
+                    
+                    // Configurar botão de atualização dos relatórios
+                    const refreshReportsBtn = document.getElementById('refresh-reports');
+                    if (refreshReportsBtn) {
+                        refreshReportsBtn.addEventListener('click', () => {
+                            window.reportsManager.refreshData();
+                        });
+                    }
+                } else {
+                    console.error('❌ Sistema de relatórios não foi carregado corretamente');
+                }
+            }, 1000);
         });
     </script>
 </body>
