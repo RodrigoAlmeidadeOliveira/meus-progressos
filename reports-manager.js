@@ -654,10 +654,20 @@ class ReportsManager {
         
         console.log(`📊 Criando gráfico de barras para ${canvasId}`, config);
 
-        // Destruir gráfico existente
+        // Destruir gráfico existente com verificação mais robusta
         if (this.charts[canvasId]) {
-            this.charts[canvasId].destroy();
+            try {
+                this.charts[canvasId].destroy();
+                console.log(`🗑️ Gráfico ${canvasId} destruído`);
+            } catch (error) {
+                console.warn(`⚠️ Erro ao destruir gráfico ${canvasId}:`, error);
+            }
+            delete this.charts[canvasId];
         }
+
+        // Limpar contexto do canvas
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Aguardar Chart.js estar disponível
         const createChart = () => {
@@ -710,14 +720,26 @@ class ReportsManager {
     createLineChart(canvasId, config) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
-            console.warn(`Canvas ${canvasId} não encontrado`);
+            console.warn(`❌ Canvas ${canvasId} não encontrado`);
             return;
         }
 
-        // Destruir gráfico existente
+        console.log(`📈 Criando gráfico de linha para ${canvasId}`, config);
+
+        // Destruir gráfico existente com verificação mais robusta
         if (this.charts[canvasId]) {
-            this.charts[canvasId].destroy();
+            try {
+                this.charts[canvasId].destroy();
+                console.log(`🗑️ Gráfico ${canvasId} destruído`);
+            } catch (error) {
+                console.warn(`⚠️ Erro ao destruir gráfico ${canvasId}:`, error);
+            }
+            delete this.charts[canvasId];
         }
+
+        // Limpar contexto do canvas
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // Aguardar Chart.js estar disponível
         const createChart = () => {

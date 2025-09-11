@@ -364,6 +364,7 @@ class TerapeutaPanelMelhorado {
         this.filteredEvaluations = [];
         this.selectedEvaluations = [];
         this.autoRefreshInterval = null;
+        this.lastReportDataUpdate = null;
         
         this.init();
     }
@@ -583,9 +584,12 @@ class TerapeutaPanelMelhorado {
             this.populateEvaluationsList(evaluations);
             this.updateLastSyncTime();
             
-            // Atualizar sistema de relatórios
-            if (window.reportsManager) {
+            // Atualizar sistema de relatórios apenas se os dados mudaram
+            if (window.reportsManager && (!this.lastReportDataUpdate || 
+                JSON.stringify(evaluations) !== JSON.stringify(this.lastReportDataUpdate))) {
+                console.log('📊 Atualizando dados dos relatórios...');
                 window.reportsManager.setData(evaluations);
+                this.lastReportDataUpdate = JSON.parse(JSON.stringify(evaluations));
             }
             
             console.log(`✅ Terapeuta: Dashboard carregado - ${evaluations.length} avaliações`);
@@ -611,9 +615,12 @@ class TerapeutaPanelMelhorado {
             this.populateEvaluationsList(evaluations);
             this.updateLastSyncTime();
             
-            // Atualizar sistema de relatórios
-            if (window.reportsManager) {
+            // Atualizar sistema de relatórios apenas se os dados mudaram
+            if (window.reportsManager && (!this.lastReportDataUpdate || 
+                JSON.stringify(evaluations) !== JSON.stringify(this.lastReportDataUpdate))) {
+                console.log('📊 Atualizando dados dos relatórios...');
                 window.reportsManager.setData(evaluations);
+                this.lastReportDataUpdate = JSON.parse(JSON.stringify(evaluations));
             }
             
             if (!silent) {
