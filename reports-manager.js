@@ -124,13 +124,82 @@ class ReportsManager {
         
         this.populatePatientSelector();
         
-        // Só gerar relatórios se não há dados ou se for a primeira vez
-        if (!this.hasInitialReports) {
-            this.generateDefaultReports();
-            this.hasInitialReports = true;
-        } else {
-            console.log('📊 Dados atualizados, mas não regenerando relatórios automaticamente');
+        // DESABILITADO: Geração automática de relatórios
+        // Os relatórios serão gerados apenas quando solicitados pelo usuário
+        console.log('📊 Dados carregados. Use o botão "Gerar Relatórios" para visualizar.');
+        this.showInitialMessage();
+    }
+
+    showInitialMessage() {
+        // Mostrar mensagem inicial em todos os containers de relatórios
+        const containers = ['general-stats', 'groups-stats', 'subgroups-stats', 'evolution-stats'];
+        
+        containers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = `
+                    <div class="initial-report-message">
+                        <h3>📊 Relatórios Disponíveis</h3>
+                        <p>Dados carregados: <strong>${this.currentData.length} avaliações</strong></p>
+                        <button class="btn-generate-reports" onclick="window.reportsManager.generateAllReports()">
+                            📈 Gerar Relatórios Agora
+                        </button>
+                        <p class="help-text">Clique no botão acima para visualizar os gráficos e estatísticas</p>
+                    </div>
+                `;
+            }
+        });
+
+        // Limpar os canvas também
+        const canvasIds = ['general-chart', 'groups-chart', 'subgroups-chart', 'evolution-chart'];
+        canvasIds.forEach(canvasId => {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#f8f9fa';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#6c757d';
+                ctx.font = '16px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('Clique em "Gerar Relatórios" para visualizar', canvas.width/2, canvas.height/2);
+            }
+        });
+    }
+
+    async generateAllReports() {
+        console.log('🚀 Gerando todos os relatórios manualmente...');
+        
+        if (this.isGeneratingReports) {
+            console.log('⚠️ Já está gerando relatórios, aguarde...');
+            return;
         }
+
+        // Mostrar loading
+        this.showLoadingMessage();
+        
+        try {
+            await this.generateDefaultReports();
+        } catch (error) {
+            console.error('❌ Erro ao gerar relatórios:', error);
+        }
+    }
+
+    showLoadingMessage() {
+        const containers = ['general-stats', 'groups-stats', 'subgroups-stats', 'evolution-stats'];
+        
+        containers.forEach(containerId => {
+            const container = document.getElementById(containerId);
+            if (container) {
+                container.innerHTML = `
+                    <div class="loading-report-message">
+                        <h3>⏳ Gerando Relatórios...</h3>
+                        <p>Aguarde enquanto os gráficos são criados...</p>
+                        <div class="loading-spinner"></div>
+                    </div>
+                `;
+            }
+        });
     }
 
     processEvaluationsData(evaluations) {
@@ -285,33 +354,54 @@ class ReportsManager {
     async generateDefaultReports() {
         if (this.isGeneratingReports) {
             console.log('⚠️ Relatórios já sendo gerados, ignorando...');
+            this.showNotification('⚠️ Aguarde, relatórios ainda estão sendo gerados...', 'info');
             return;
         }
         
         this.isGeneratingReports = true;
-        console.log('📊 Gerando relatórios padrão...');
+        console.log('📊 Iniciando geração de relatórios padrão...');
         
         try {
+            // Limpar todos os gráficos existentes antes de começar
+            console.log('🧹 Limpando gráficos existentes...');
+            await this.destroyAllCharts();
+            
+            // Gerar cada relatório com intervalo para evitar conflitos
+            console.log('📈 Gerando relatório geral...');
             await this.generateReport(this.reportTypes.GENERAL);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            console.log('📊 Gerando relatório por grupos...');
             await this.generateReport(this.reportTypes.BY_GROUP);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            console.log('📋 Gerando relatório por subgrupos...');
             await this.generateReport(this.reportTypes.BY_SUBGROUP);
             
             if (this.selectedPatient) {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                console.log('📈 Gerando relatório de evolução...');
                 await this.generateReport(this.reportTypes.EVOLUTION);
             }
+            
+            console.log('✅ Todos os relatórios foram gerados com sucesso!');
+            this.showNotification('✅ Relatórios gerados com sucesso!', 'success');
+            
+        } catch (error) {
+            console.error('❌ Erro durante geração de relatórios:', error);
+            this.showNotification('❌ Erro ao gerar relatórios: ' + error.message, 'error');
         } finally {
-            // Liberar o lock após um delay menor
-            setTimeout(() => {
-                this.isGeneratingReports = false;
-                console.log('🔓 Lock de relatórios liberado');
-            }, 500);
+            // Liberar o lock imediatamente ao terminar
+            this.isGeneratingReports = false;
+            console.log('🔓 Geração de relatórios finalizada');
         }
     }
 
     updateReports() {
-        if (!this.isGeneratingReports) {
-            this.generateDefaultReports();
-        }
+        // DESABILITADO: Não gera relatórios automaticamente em mudanças de filtro
+        // Os usuários devem clicar em "Gerar Relatórios" manualmente
+        console.log('⚠️ Filtros alterados. Clique em "Gerar Relatórios" para atualizar.');
+        this.showInitialMessage();
     }
 
     async generateReport(reportType) {
@@ -655,41 +745,27 @@ class ReportsManager {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
             console.warn(`❌ Canvas ${canvasId} não encontrado`);
-            console.log('📋 Elementos canvas disponíveis:', 
-                Array.from(document.querySelectorAll('canvas')).map(c => c.id));
             return;
         }
         
-        console.log(`📊 Criando gráfico de barras para ${canvasId}`, config);
+        console.log(`📊 Criando gráfico de barras para ${canvasId}`);
 
-        // Aguardar um pouco antes de destruir/criar para evitar conflitos
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        // Destruir gráfico existente com verificação mais robusta
-        if (this.charts[canvasId]) {
-            try {
-                this.charts[canvasId].destroy();
-                console.log(`🗑️ Gráfico ${canvasId} destruído`);
-                // Aguardar a destruição completar
-                await new Promise(resolve => setTimeout(resolve, 50));
-            } catch (error) {
-                console.warn(`⚠️ Erro ao destruir gráfico ${canvasId}:`, error);
-            }
-            delete this.charts[canvasId];
+        // SOLUÇÃO ROBUSTA: Destruição completa e recriação do canvas
+        await this.safeDestroyChart(canvasId);
+        await this.recreateCanvas(canvasId);
+        
+        // Obter nova referência do canvas após recriação
+        const newCanvas = document.getElementById(canvasId);
+        if (!newCanvas) {
+            console.error(`❌ Erro: Canvas ${canvasId} não pôde ser recriado`);
+            return;
         }
 
-        // Limpar contexto do canvas
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Aguardar Chart.js estar disponível
-        const createChart = () => {
-            if (typeof Chart === 'undefined') {
-                setTimeout(createChart, 100);
-                return;
-            }
-
-            this.charts[canvasId] = new Chart(canvas, {
+        // Aguardar Chart.js estar disponível e criar o gráfico
+        await this.waitForChart();
+        
+        try {
+            this.charts[canvasId] = new Chart(newCanvas, {
                 type: 'bar',
                 data: {
                     labels: config.labels,
@@ -725,9 +801,10 @@ class ReportsManager {
                     }
                 }
             });
-        };
-
-        createChart();
+            console.log(`✅ Gráfico ${canvasId} criado com sucesso`);
+        } catch (error) {
+            console.error(`❌ Erro ao criar gráfico ${canvasId}:`, error);
+        }
     }
 
     async createLineChart(canvasId, config) {
@@ -737,36 +814,24 @@ class ReportsManager {
             return;
         }
 
-        console.log(`📈 Criando gráfico de linha para ${canvasId}`, config);
+        console.log(`📈 Criando gráfico de linha para ${canvasId}`);
 
-        // Aguardar um pouco antes de destruir/criar para evitar conflitos
-        await new Promise(resolve => setTimeout(resolve, 50));
-
-        // Destruir gráfico existente com verificação mais robusta
-        if (this.charts[canvasId]) {
-            try {
-                this.charts[canvasId].destroy();
-                console.log(`🗑️ Gráfico ${canvasId} destruído`);
-                // Aguardar a destruição completar
-                await new Promise(resolve => setTimeout(resolve, 50));
-            } catch (error) {
-                console.warn(`⚠️ Erro ao destruir gráfico ${canvasId}:`, error);
-            }
-            delete this.charts[canvasId];
+        // SOLUÇÃO ROBUSTA: Destruição completa e recriação do canvas
+        await this.safeDestroyChart(canvasId);
+        await this.recreateCanvas(canvasId);
+        
+        // Obter nova referência do canvas após recriação
+        const newCanvas = document.getElementById(canvasId);
+        if (!newCanvas) {
+            console.error(`❌ Erro: Canvas ${canvasId} não pôde ser recriado`);
+            return;
         }
 
-        // Limpar contexto do canvas
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Aguardar Chart.js estar disponível
-        const createChart = () => {
-            if (typeof Chart === 'undefined') {
-                setTimeout(createChart, 100);
-                return;
-            }
-
-            this.charts[canvasId] = new Chart(canvas, {
+        // Aguardar Chart.js estar disponível e criar o gráfico
+        await this.waitForChart();
+        
+        try {
+            this.charts[canvasId] = new Chart(newCanvas, {
                 type: 'line',
                 data: {
                     labels: config.labels,
@@ -802,9 +867,10 @@ class ReportsManager {
                     }
                 }
             });
-        };
-
-        createChart();
+            console.log(`✅ Gráfico ${canvasId} criado com sucesso`);
+        } catch (error) {
+            console.error(`❌ Erro ao criar gráfico ${canvasId}:`, error);
+        }
     }
 
     showEmptyChart(canvasId, message) {
@@ -1213,11 +1279,99 @@ class ReportsManager {
         }, 4000);
     }
 
+    // NOVOS MÉTODOS SEGUROS PARA GERENCIAMENTO DE CANVAS
+    async safeDestroyChart(canvasId) {
+        console.log(`🗑️ Destruindo chart ${canvasId} de forma segura...`);
+        
+        if (this.charts[canvasId]) {
+            try {
+                // Tentar destruir o gráfico
+                this.charts[canvasId].destroy();
+                console.log(`✅ Chart ${canvasId} destruído`);
+            } catch (error) {
+                console.warn(`⚠️ Erro ao destruir chart ${canvasId}:`, error);
+            }
+            
+            // Remover da lista de charts
+            delete this.charts[canvasId];
+        }
+        
+        // Aguardar um pouco para garantir que a destruição foi processada
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+    
+    async recreateCanvas(canvasId) {
+        console.log(`🔄 Recriando canvas ${canvasId}...`);
+        
+        const originalCanvas = document.getElementById(canvasId);
+        if (!originalCanvas) {
+            console.error(`❌ Canvas original ${canvasId} não encontrado`);
+            return;
+        }
+        
+        // Obter informações do canvas original
+        const parent = originalCanvas.parentNode;
+        const nextSibling = originalCanvas.nextSibling;
+        const originalClasses = originalCanvas.className;
+        const originalWidth = originalCanvas.width;
+        const originalHeight = originalCanvas.height;
+        
+        // Remover canvas antigo
+        originalCanvas.remove();
+        
+        // Criar novo canvas
+        const newCanvas = document.createElement('canvas');
+        newCanvas.id = canvasId;
+        newCanvas.className = originalClasses;
+        newCanvas.width = originalWidth;
+        newCanvas.height = originalHeight;
+        
+        // Inserir no DOM
+        if (nextSibling) {
+            parent.insertBefore(newCanvas, nextSibling);
+        } else {
+            parent.appendChild(newCanvas);
+        }
+        
+        console.log(`✅ Canvas ${canvasId} recriado`);
+        
+        // Aguardar um pouco para o DOM processar
+        await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    
+    async waitForChart() {
+        return new Promise((resolve) => {
+            const checkChart = () => {
+                if (typeof Chart !== 'undefined') {
+                    resolve();
+                } else {
+                    setTimeout(checkChart, 50);
+                }
+            };
+            checkChart();
+        });
+    }
+    
+    async destroyAllCharts() {
+        console.log('🗑️ Destruindo todos os gráficos existentes...');
+        
+        const chartIds = Object.keys(this.charts);
+        for (const chartId of chartIds) {
+            await this.safeDestroyChart(chartId);
+        }
+        
+        console.log('✅ Todos os gráficos foram destruídos');
+    }
+
     destroy() {
         // Limpar todos os gráficos
         Object.values(this.charts).forEach(chart => {
             if (chart && chart.destroy) {
-                chart.destroy();
+                try {
+                    chart.destroy();
+                } catch (error) {
+                    console.warn('Erro ao destruir chart:', error);
+                }
             }
         });
         this.charts = {};
