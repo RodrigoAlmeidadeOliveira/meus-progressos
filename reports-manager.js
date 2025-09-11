@@ -8,6 +8,7 @@ class ReportsManager {
         this.selectedPatient = null;
         this.selectedDateRange = null;
         this.isGeneratingReports = false;
+        this.hasInitialReports = false;
         this.reportTypes = {
             GENERAL: 'geral',
             BY_GROUP: 'por_grupo', 
@@ -122,7 +123,14 @@ class ReportsManager {
         console.log(`📊 Dados processados:`, this.currentData);
         
         this.populatePatientSelector();
-        this.generateDefaultReports();
+        
+        // Só gerar relatórios se não há dados ou se for a primeira vez
+        if (!this.hasInitialReports) {
+            this.generateDefaultReports();
+            this.hasInitialReports = true;
+        } else {
+            console.log('📊 Dados atualizados, mas não regenerando relatórios automaticamente');
+        }
     }
 
     processEvaluationsData(evaluations) {
@@ -274,7 +282,7 @@ class ReportsManager {
         return filtered;
     }
 
-    generateDefaultReports() {
+    async generateDefaultReports() {
         if (this.isGeneratingReports) {
             console.log('⚠️ Relatórios já sendo gerados, ignorando...');
             return;
@@ -284,12 +292,12 @@ class ReportsManager {
         console.log('📊 Gerando relatórios padrão...');
         
         try {
-            this.generateReport(this.reportTypes.GENERAL);
-            this.generateReport(this.reportTypes.BY_GROUP);
-            this.generateReport(this.reportTypes.BY_SUBGROUP);
+            await this.generateReport(this.reportTypes.GENERAL);
+            await this.generateReport(this.reportTypes.BY_GROUP);
+            await this.generateReport(this.reportTypes.BY_SUBGROUP);
             
             if (this.selectedPatient) {
-                this.generateReport(this.reportTypes.EVOLUTION);
+                await this.generateReport(this.reportTypes.EVOLUTION);
             }
         } finally {
             // Liberar o lock após um delay menor
@@ -306,21 +314,21 @@ class ReportsManager {
         }
     }
 
-    generateReport(reportType) {
+    async generateReport(reportType) {
         const data = this.getFilteredData();
         
         switch (reportType) {
             case this.reportTypes.GENERAL:
-                this.generateGeneralReport(data);
+                await this.generateGeneralReport(data);
                 break;
             case this.reportTypes.BY_GROUP:
-                this.generateGroupReport(data);
+                await this.generateGroupReport(data);
                 break;
             case this.reportTypes.BY_SUBGROUP:
-                this.generateSubgroupReport(data);
+                await this.generateSubgroupReport(data);
                 break;
             case this.reportTypes.EVOLUTION:
-                this.generateEvolutionReport(data);
+                await this.generateEvolutionReport(data);
                 break;
             case this.reportTypes.COMPARISON:
                 this.generateComparisonReport(data);
@@ -328,7 +336,7 @@ class ReportsManager {
         }
     }
 
-    generateGeneralReport(data) {
+    async generateGeneralReport(data) {
         console.log('📊 Gerando relatório geral...');
         
         if (data.length === 0) {
@@ -337,7 +345,7 @@ class ReportsManager {
         }
 
         const generalStats = this.calculateGeneralStatistics(data);
-        this.createBarChart('general-chart', {
+        await this.createBarChart('general-chart', {
             title: 'Pontuação Geral por Categoria',
             labels: Object.keys(generalStats),
             datasets: [{
@@ -362,7 +370,7 @@ class ReportsManager {
         this.updateGeneralStatistics(generalStats, data.length);
     }
 
-    generateGroupReport(data) {
+    async generateGroupReport(data) {
         console.log('📊 Gerando relatório por grupos...');
         
         if (data.length === 0) {
@@ -373,7 +381,7 @@ class ReportsManager {
         const groupStats = this.calculateGroupStatistics(data);
         const chartData = this.prepareGroupChartData(groupStats);
         
-        this.createBarChart('groups-chart', {
+        await this.createBarChart('groups-chart', {
             title: 'Evolução por Grupos de Habilidades',
             labels: chartData.labels,
             datasets: chartData.datasets
@@ -382,7 +390,7 @@ class ReportsManager {
         this.updateGroupStatisticsTable(groupStats);
     }
 
-    generateSubgroupReport(data) {
+    async generateSubgroupReport(data) {
         console.log('📊 Gerando relatório por subgrupos...');
         
         if (data.length === 0) {
@@ -393,7 +401,7 @@ class ReportsManager {
         const subgroupStats = this.calculateSubgroupStatistics(data);
         const chartData = this.prepareSubgroupChartData(subgroupStats);
         
-        this.createBarChart('subgroups-chart', {
+        await this.createBarChart('subgroups-chart', {
             title: 'Desempenho por Subgrupos',
             labels: chartData.labels,
             datasets: chartData.datasets
@@ -402,7 +410,7 @@ class ReportsManager {
         this.updateSubgroupStatisticsTable(subgroupStats);
     }
 
-    generateEvolutionReport(data) {
+    async generateEvolutionReport(data) {
         console.log('📊 Gerando relatório de evolução...');
         
         if (!this.selectedPatient || data.length < 2) {
@@ -412,7 +420,7 @@ class ReportsManager {
 
         const evolutionData = this.calculateEvolutionData(data);
         
-        this.createLineChart('evolution-chart', {
+        await this.createLineChart('evolution-chart', {
             title: `Evolução de ${this.selectedPatient}`,
             labels: evolutionData.dates,
             datasets: evolutionData.datasets
@@ -643,7 +651,7 @@ class ReportsManager {
         };
     }
 
-    createBarChart(canvasId, config) {
+    async createBarChart(canvasId, config) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
             console.warn(`❌ Canvas ${canvasId} não encontrado`);
@@ -654,11 +662,16 @@ class ReportsManager {
         
         console.log(`📊 Criando gráfico de barras para ${canvasId}`, config);
 
+        // Aguardar um pouco antes de destruir/criar para evitar conflitos
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         // Destruir gráfico existente com verificação mais robusta
         if (this.charts[canvasId]) {
             try {
                 this.charts[canvasId].destroy();
                 console.log(`🗑️ Gráfico ${canvasId} destruído`);
+                // Aguardar a destruição completar
+                await new Promise(resolve => setTimeout(resolve, 50));
             } catch (error) {
                 console.warn(`⚠️ Erro ao destruir gráfico ${canvasId}:`, error);
             }
@@ -717,7 +730,7 @@ class ReportsManager {
         createChart();
     }
 
-    createLineChart(canvasId, config) {
+    async createLineChart(canvasId, config) {
         const canvas = document.getElementById(canvasId);
         if (!canvas) {
             console.warn(`❌ Canvas ${canvasId} não encontrado`);
@@ -726,11 +739,16 @@ class ReportsManager {
 
         console.log(`📈 Criando gráfico de linha para ${canvasId}`, config);
 
+        // Aguardar um pouco antes de destruir/criar para evitar conflitos
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         // Destruir gráfico existente com verificação mais robusta
         if (this.charts[canvasId]) {
             try {
                 this.charts[canvasId].destroy();
                 console.log(`🗑️ Gráfico ${canvasId} destruído`);
+                // Aguardar a destruição completar
+                await new Promise(resolve => setTimeout(resolve, 50));
             } catch (error) {
                 console.warn(`⚠️ Erro ao destruir gráfico ${canvasId}:`, error);
             }
