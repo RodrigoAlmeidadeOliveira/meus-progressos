@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verificar Dados Salvos - Meus Progressos</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+        }
+        .data-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .no-data {
+            color: #dc3545;
+            padding: 20px;
+            background: #f8d7da;
+            border-radius: 10px;
+            border-left: 4px solid #dc3545;
+        }
+        .success {
+            color: #155724;
+            padding: 20px;
+            background: #d4edda;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #5a67d8;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #17a2b8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #667eea;
+            color: white;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Verificador de Dados Salvos - Meus Progressos</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Informação:</strong> Esta página verifica todos os dados salvos localmente no seu navegador.
+        </div>
+
+        <div class="button-group">
+            <button onclick="verificarTodos()">🔄 Atualizar Dados</button>
+            <button onclick="exportarDados()">📥 Exportar Dados</button>
+            <button class="danger" onclick="limparTodos()">🗑️ Limpar Todos os Dados</button>
+        </div>
+
+        <h2>📋 Dados do Formulário (questionnaireData)</h2>
+        <div id="questionnaire-data" class="data-section"></div>
+
+        <h2>💾 Rascunho Automático (questionnaireAutoSave)</h2>
+        <div id="autosave-data" class="data-section"></div>
+
+        <h2>🔐 Dados de Autenticação</h2>
+        <div id="auth-data" class="data-section"></div>
+
+        <h2>📊 Todos os Dados no localStorage</h2>
+        <div id="all-data" class="data-section"></div>
+
+        <h2>🔥 Status do Firebase</h2>
+        <div id="firebase-status" class="data-section"></div>
+    </div>
+
+    <script>
+        // Definir funções globais primeiro
+        window.verificarTodos = function() {
+            // Será definida depois
+        };
+        
+        window.exportarDados = function() {
+            // Será definida depois
+        };
+        
+        window.limparTodos = function() {
+            // Será definida depois  
+        };
+    </script>
+    
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_fkKU3N61u3HxKklIbdAMK2qUAPDVHhQ",
+            authDomain: "avaliacao-habilidades-2024.firebaseapp.com",
+            projectId: "avaliacao-habilidades-2024",
+            storageBucket: "avaliacao-habilidades-2024.firebasestorage.app",
+            messagingSenderId: "1026943873619",
+            appId: "1:1026943873619:web:50276ae57af2e3a9ea0ca6",
+            measurementId: "G-3LNVBBET4E"
+        };
+        
+        let app, db, auth;
+        
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            // Autenticar anonimamente
+            await signInAnonymously(auth);
+            
+            window.firebaseApp = { app, db, auth };
+            
+            // Verificar dados no Firebase
+            verificarFirebase();
+        } catch (error) {
+            console.error('Erro ao inicializar Firebase:', error);
+            document.getElementById('firebase-status').innerHTML = `
+                <div class="no-data">
+                    ❌ Erro ao conectar com Firebase: ${error.message}
+                </div>
+            `;
+        }
+        
+        async function verificarFirebase() {
+            try {
+                const querySnapshot = await getDocs(collection(db, 'evaluations'));
+                const evaluations = [];
+                
+                querySnapshot.forEach((doc) => {
+                    evaluations.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                
+                const statusDiv = document.getElementById('firebase-status');
+                
+                if (evaluations.length > 0) {
+                    let html = `
+                        <div class="success">✅ Firebase conectado - ${evaluations.length} avaliação(ões) encontrada(s)</div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Paciente</th>
+                                    <th>Data</th>
+                                    <th>Criado em</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    evaluations.forEach(evalItem => {
+                        html += `
+                            <tr>
+                                <td>${evalItem.id.substring(0, 8)}...</td>
+                                <td>${evalItem.patientInfo?.name || 'N/A'}</td>
+                                <td>${evalItem.patientInfo?.evaluationDate || 'N/A'}</td>
+                                <td>${evalItem.createdAt ? new Date(evalItem.createdAt).toLocaleString('pt-BR') : 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    html += `
+                            </tbody>
+                        </table>
+                        <details style="margin-top: 20px;">
+                            <summary style="cursor: pointer; color: #667eea;">Ver dados completos</summary>
+                            <pre>${JSON.stringify(evaluations, null, 2)}</pre>
+                        </details>
+                    `;
+                    
+                    statusDiv.innerHTML = html;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="info">
+                            ℹ️ Firebase conectado mas nenhuma avaliação encontrada na nuvem.
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('firebase-status').innerHTML = `
+                    <div class="no-data">
+                        ❌ Erro ao buscar dados do Firebase: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function verificarDados(key, elementId, description) {
+            const data = localStorage.getItem(key);
+            const element = document.getElementById(elementId);
+            
+            if (data) {
+                try {
+                    const parsed = JSON.parse(data);
+                    const dataSize = new Blob([data]).size;
+                    
+                    element.innerHTML = `
+                        <div class="success">✅ Dados encontrados (${(dataSize / 1024).toFixed(2)} KB)</div>
+                        <details>
+                            <summary style="cursor: pointer; color: #667eea;">Clique para expandir</summary>
+                            <pre>${JSON.stringify(parsed, null, 2)}</pre>
+                        </details>
+                    `;
+                } catch (e) {
+                    element.innerHTML = `
+                        <div class="success">✅ Dados encontrados (texto simples)</div>
+                        <pre>${data}</pre>
+                    `;
+                }
+            } else {
+                element.innerHTML = `<div class="no-data">❌ Nenhum dado encontrado para: ${description}</div>`;
+            }
+        }
+        
+        function verificarTodosLocalStorage() {
+            const allData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    allData[key] = JSON.parse(localStorage.getItem(key));
+                } catch {
+                    allData[key] = localStorage.getItem(key);
+                }
+            }
+            
+            const element = document.getElementById('all-data');
+            if (Object.keys(allData).length > 0) {
+                element.innerHTML = `
+                    <div class="success">✅ ${Object.keys(allData).length} chave(s) encontrada(s) no localStorage</div>
+                    <details>
+                        <summary style="cursor: pointer; color: #667eea;">Clique para expandir</summary>
+                        <pre>${JSON.stringify(allData, null, 2)}</pre>
+                    </details>
+                `;
+            } else {
+                element.innerHTML = `<div class="no-data">❌ localStorage está vazio</div>`;
+            }
+        }
+        
+        // Atualizar as funções globais definidas anteriormente
+        window.verificarTodos = function() {
+            verificarDados('questionnaireData', 'questionnaire-data', 'Dados do Formulário');
+            verificarDados('questionnaireAutoSave', 'autosave-data', 'Rascunho Automático');
+            verificarDados('therapistAuth', 'auth-data', 'Autenticação do Terapeuta');
+            verificarTodosLocalStorage();
+            if (window.firebaseApp) {
+                verificarFirebase();
+            }
+        };
+        
+        window.exportarDados = function() {
+            const allData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                try {
+                    allData[key] = JSON.parse(localStorage.getItem(key));
+                } catch {
+                    allData[key] = localStorage.getItem(key);
+                }
+            }
+            
+            const dataStr = JSON.stringify(allData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `meus-progressos-backup-${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            alert('✅ Dados exportados com sucesso!');
+        };
+        
+        window.limparTodos = function() {
+            if (confirm('⚠️ ATENÇÃO: Isso irá apagar TODOS os dados salvos localmente. Tem certeza?')) {
+                if (confirm('⚠️ Esta ação é IRREVERSÍVEL. Deseja realmente continuar?')) {
+                    localStorage.clear();
+                    alert('✅ Todos os dados foram limpos');
+                    window.verificarTodos();
+                }
+            }
+        };
+        
+        // Verificar dados ao carregar a página
+        window.verificarTodos();
+    </script>
+</body>
+</html>

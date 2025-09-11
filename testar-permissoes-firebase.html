@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testar Permissões Firebase - Meus Progressos</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .success {
+            color: #155724;
+            padding: 15px;
+            background: #d4edda;
+            border-radius: 5px;
+            border-left: 4px solid #28a745;
+            margin: 10px 0;
+        }
+        .error {
+            color: #721c24;
+            padding: 15px;
+            background: #f8d7da;
+            border-radius: 5px;
+            border-left: 4px solid #dc3545;
+            margin: 10px 0;
+        }
+        .warning {
+            color: #856404;
+            padding: 15px;
+            background: #fff3cd;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #17a2b8;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover:not(:disabled) {
+            background: #5a67d8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            background: #f4f4f4;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-left: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .fix-instructions {
+            background: #f0f8ff;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .fix-instructions h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        .fix-instructions ol {
+            margin-left: 20px;
+        }
+        .fix-instructions li {
+            margin: 10px 0;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Teste de Permissões Firebase</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Esta página testa as permissões do Firebase e ajuda a diagnosticar problemas de acesso.</strong>
+        </div>
+
+        <button onclick="executarTodosTestes()">🚀 Executar Todos os Testes</button>
+        <button onclick="window.location.reload()">🔄 Recarregar Página</button>
+
+        <div class="test-section">
+            <h2>1️⃣ Conexão com Firebase</h2>
+            <div id="test-conexao">
+                <button onclick="testarConexao()">Testar Conexão</button>
+                <div id="resultado-conexao"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>2️⃣ Autenticação Anônima</h2>
+            <div id="test-auth">
+                <button onclick="testarAutenticacao()">Testar Autenticação</button>
+                <div id="resultado-auth"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>3️⃣ Permissão de Leitura</h2>
+            <div id="test-leitura">
+                <button onclick="testarLeitura()">Testar Leitura</button>
+                <div id="resultado-leitura"></div>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>4️⃣ Permissão de Escrita</h2>
+            <div id="test-escrita">
+                <button onclick="testarEscrita()">Testar Escrita</button>
+                <div id="resultado-escrita"></div>
+            </div>
+        </div>
+
+        <div id="fix-section" style="display: none;">
+            <div class="fix-instructions">
+                <h3>🔧 Como Corrigir as Permissões</h3>
+                <ol>
+                    <li>Acesse o <a href="https://console.firebase.google.com" target="_blank">Console do Firebase</a></li>
+                    <li>Selecione o projeto <strong>avaliacao-habilidades-2024</strong></li>
+                    <li>No menu lateral, clique em <strong>Firestore Database</strong></li>
+                    <li>Clique na aba <strong>Rules</strong></li>
+                    <li>Substitua as regras atuais por:</li>
+                </ol>
+                <pre>rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Permitir leitura e escrita para usuários autenticados
+    match /{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+                <ol start="6">
+                    <li>Clique em <strong>Publish</strong></li>
+                    <li>Aguarde 30 segundos e execute os testes novamente</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h2>📊 Resumo dos Testes</h2>
+            <div id="resumo-testes"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_fkKU3N61u3HxKklIbdAMK2qUAPDVHhQ",
+            authDomain: "avaliacao-habilidades-2024.firebaseapp.com",
+            projectId: "avaliacao-habilidades-2024",
+            storageBucket: "avaliacao-habilidades-2024.firebasestorage.app",
+            messagingSenderId: "1026943873619",
+            appId: "1:1026943873619:web:50276ae57af2e3a9ea0ca6",
+            measurementId: "G-3LNVBBET4E"
+        };
+        
+        let app, db, auth;
+        let testResults = {
+            conexao: false,
+            autenticacao: false,
+            leitura: false,
+            escrita: false
+        };
+        
+        // Testar conexão
+        window.testarConexao = async function() {
+            const resultDiv = document.getElementById('resultado-conexao');
+            resultDiv.innerHTML = '<span class="spinner"></span> Testando conexão...';
+            
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                resultDiv.innerHTML = '<div class="success">✅ Conexão estabelecida com sucesso!</div>';
+                testResults.conexao = true;
+                
+                // Mostrar detalhes
+                resultDiv.innerHTML += `
+                    <div class="test-result">
+                        <strong>Projeto:</strong> ${firebaseConfig.projectId}<br>
+                        <strong>App ID:</strong> ${firebaseConfig.appId}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro na conexão: ${error.message}</div>`;
+                testResults.conexao = false;
+                mostrarInstrucoes();
+            }
+        };
+        
+        // Testar autenticação
+        window.testarAutenticacao = async function() {
+            const resultDiv = document.getElementById('resultado-auth');
+            resultDiv.innerHTML = '<span class="spinner"></span> Testando autenticação...';
+            
+            if (!app) {
+                resultDiv.innerHTML = '<div class="warning">⚠️ Execute o teste de conexão primeiro</div>';
+                return;
+            }
+            
+            try {
+                const userCredential = await signInAnonymously(auth);
+                const user = userCredential.user;
+                
+                resultDiv.innerHTML = '<div class="success">✅ Autenticação anônima bem-sucedida!</div>';
+                testResults.autenticacao = true;
+                
+                resultDiv.innerHTML += `
+                    <div class="test-result">
+                        <strong>User ID:</strong> ${user.uid}<br>
+                        <strong>Tipo:</strong> Anônimo<br>
+                        <strong>Autenticado:</strong> Sim
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro na autenticação: ${error.message}</div>`;
+                testResults.autenticacao = false;
+                
+                if (error.code === 'auth/operation-not-allowed') {
+                    resultDiv.innerHTML += `
+                        <div class="warning">
+                            ⚠️ Autenticação anônima não está habilitada.<br>
+                            Acesse: Firebase Console > Authentication > Sign-in method > Anonymous
+                        </div>
+                    `;
+                }
+                mostrarInstrucoes();
+            }
+        };
+        
+        // Testar leitura
+        window.testarLeitura = async function() {
+            const resultDiv = document.getElementById('resultado-leitura');
+            resultDiv.innerHTML = '<span class="spinner"></span> Testando leitura...';
+            
+            if (!db || !auth.currentUser) {
+                resultDiv.innerHTML = '<div class="warning">⚠️ Execute os testes de conexão e autenticação primeiro</div>';
+                return;
+            }
+            
+            try {
+                const querySnapshot = await getDocs(collection(db, 'evaluations'));
+                const count = querySnapshot.size;
+                
+                resultDiv.innerHTML = `<div class="success">✅ Leitura permitida! ${count} documento(s) encontrado(s)</div>`;
+                testResults.leitura = true;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro na leitura: ${error.message}</div>`;
+                testResults.leitura = false;
+                
+                if (error.code === 'permission-denied') {
+                    resultDiv.innerHTML += '<div class="warning">⚠️ As regras do Firestore estão bloqueando a leitura</div>';
+                }
+                mostrarInstrucoes();
+            }
+        };
+        
+        // Testar escrita
+        window.testarEscrita = async function() {
+            const resultDiv = document.getElementById('resultado-escrita');
+            resultDiv.innerHTML = '<span class="spinner"></span> Testando escrita...';
+            
+            if (!db || !auth.currentUser) {
+                resultDiv.innerHTML = '<div class="warning">⚠️ Execute os testes de conexão e autenticação primeiro</div>';
+                return;
+            }
+            
+            try {
+                // Criar documento de teste
+                const testData = {
+                    testType: 'permission-test',
+                    timestamp: new Date().toISOString(),
+                    userId: auth.currentUser.uid,
+                    message: 'Teste de permissão de escrita'
+                };
+                
+                const docRef = await addDoc(collection(db, 'test-permissions'), testData);
+                
+                resultDiv.innerHTML = `<div class="success">✅ Escrita permitida! Documento criado: ${docRef.id}</div>`;
+                testResults.escrita = true;
+                
+                // Limpar documento de teste
+                try {
+                    await deleteDoc(doc(db, 'test-permissions', docRef.id));
+                    resultDiv.innerHTML += '<div class="info">ℹ️ Documento de teste removido</div>';
+                } catch (e) {
+                    console.log('Não foi possível remover o documento de teste:', e);
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Erro na escrita: ${error.message}</div>`;
+                testResults.escrita = false;
+                
+                if (error.code === 'permission-denied') {
+                    resultDiv.innerHTML += `
+                        <div class="warning">
+                            ⚠️ As regras do Firestore estão bloqueando a escrita<br>
+                            <strong>Código do erro:</strong> ${error.code}
+                        </div>
+                    `;
+                }
+                mostrarInstrucoes();
+            }
+        };
+        
+        // Executar todos os testes
+        window.executarTodosTestes = async function() {
+            await testarConexao();
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            if (testResults.conexao) {
+                await testarAutenticacao();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (testResults.autenticacao) {
+                    await testarLeitura();
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    await testarEscrita();
+                }
+            }
+            
+            mostrarResumo();
+        };
+        
+        // Mostrar instruções de correção
+        function mostrarInstrucoes() {
+            document.getElementById('fix-section').style.display = 'block';
+        }
+        
+        // Mostrar resumo
+        function mostrarResumo() {
+            const resumoDiv = document.getElementById('resumo-testes');
+            const todosPassaram = Object.values(testResults).every(v => v === true);
+            
+            let html = '<table style="width: 100%;">';
+            html += '<tr><th style="text-align: left;">Teste</th><th>Status</th></tr>';
+            html += `<tr><td>Conexão</td><td>${testResults.conexao ? '✅ OK' : '❌ Falhou'}</td></tr>`;
+            html += `<tr><td>Autenticação</td><td>${testResults.autenticacao ? '✅ OK' : '❌ Falhou'}</td></tr>`;
+            html += `<tr><td>Leitura</td><td>${testResults.leitura ? '✅ OK' : '❌ Falhou'}</td></tr>`;
+            html += `<tr><td>Escrita</td><td>${testResults.escrita ? '✅ OK' : '❌ Falhou'}</td></tr>`;
+            html += '</table>';
+            
+            if (todosPassaram) {
+                html = '<div class="success">🎉 Todos os testes passaram! O Firebase está configurado corretamente.</div>' + html;
+            } else {
+                html = '<div class="error">⚠️ Alguns testes falharam. Siga as instruções acima para corrigir.</div>' + html;
+            }
+            
+            resumoDiv.innerHTML = html;
+        }
+        
+        // Inicializar ao carregar
+        window.addEventListener('load', () => {
+            console.log('Página de teste de permissões carregada');
+            console.log('Execute os testes para diagnosticar problemas de permissão');
+        });
+    </script>
+</body>
+</html>

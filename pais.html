@@ -301,6 +301,48 @@
         </div>
     </div>
 
-    <script src="script-pais.js"></script>
+    <!-- Script melhorado com verificação de conexão e backup triplo -->
+    <script src="script-pais-melhorado.js"></script>
+    
+    <!-- Adicionar aviso de salvamento automático -->
+    <style>
+        .auto-save-info {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 12px;
+            color: #666;
+            z-index: 1000;
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 9999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .backup-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+    
+    <div class="auto-save-info">
+        💾 Salvamento automático a cada 30 segundos
+    </div>
 </body>
 </html>

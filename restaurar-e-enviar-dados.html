@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurar e Enviar Dados - Meus Progressos</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #667eea;
+            margin-top: 30px;
+        }
+        .evaluation-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .success {
+            color: #155724;
+            padding: 20px;
+            background: #d4edda;
+            border-radius: 10px;
+            border-left: 4px solid #28a745;
+            margin: 10px 0;
+        }
+        .error {
+            color: #721c24;
+            padding: 20px;
+            background: #f8d7da;
+            border-radius: 10px;
+            border-left: 4px solid #dc3545;
+            margin: 10px 0;
+        }
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border-left: 4px solid #17a2b8;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 16px;
+        }
+        button:hover:not(:disabled) {
+            background: #5a67d8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        button.success-btn {
+            background: #28a745;
+        }
+        button.success-btn:hover {
+            background: #218838;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 2em;
+            color: #667eea;
+            font-weight: bold;
+        }
+        .stat-label {
+            color: #666;
+            margin-top: 5px;
+        }
+        details {
+            margin: 10px 0;
+        }
+        summary {
+            cursor: pointer;
+            color: #667eea;
+            font-weight: bold;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading.active {
+            display: block;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Restaurar e Enviar Dados ao Firebase</h1>
+        
+        <div class="info">
+            <strong>ℹ️ Informação:</strong> Esta página permite restaurar seus dados salvos localmente e enviá-los ao Firebase.
+        </div>
+
+        <div class="button-group">
+            <input type="file" id="file-input" accept=".json" style="display: none;">
+            <button onclick="document.getElementById('file-input').click()">📂 Carregar Arquivo JSON</button>
+            <button onclick="verificarDadosLocais()">🔍 Verificar Dados Locais</button>
+            <button onclick="enviarTodosAoFirebase()" id="send-all-btn">☁️ Enviar Todos ao Firebase</button>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Processando...</p>
+        </div>
+
+        <h2>📊 Resumo dos Dados</h2>
+        <div id="data-summary"></div>
+
+        <h2>📝 Avaliações Encontradas</h2>
+        <div id="evaluations-list"></div>
+
+        <h2>🔥 Status do Firebase</h2>
+        <div id="firebase-status"></div>
+
+        <h2>📤 Log de Envio</h2>
+        <div id="send-log"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, addDoc, getDocs, query, where } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        // Configuração do Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_fkKU3N61u3HxKklIbdAMK2qUAPDVHhQ",
+            authDomain: "avaliacao-habilidades-2024.firebaseapp.com",
+            projectId: "avaliacao-habilidades-2024",
+            storageBucket: "avaliacao-habilidades-2024.firebasestorage.app",
+            messagingSenderId: "1026943873619",
+            appId: "1:1026943873619:web:50276ae57af2e3a9ea0ca6",
+            measurementId: "G-3LNVBBET4E"
+        };
+        
+        let app, db, auth;
+        let loadedData = null;
+        
+        // Inicializar Firebase
+        async function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getFirestore(app);
+                
+                await signInAnonymously(auth);
+                
+                window.firebaseApp = { app, db, auth };
+                
+                document.getElementById('firebase-status').innerHTML = `
+                    <div class="success">✅ Firebase conectado e pronto para receber dados!</div>
+                `;
+                
+                return true;
+            } catch (error) {
+                console.error('Erro ao inicializar Firebase:', error);
+                document.getElementById('firebase-status').innerHTML = `
+                    <div class="error">❌ Erro ao conectar com Firebase: ${error.message}</div>
+                `;
+                return false;
+            }
+        }
+        
+        // Carregar arquivo JSON
+        document.getElementById('file-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    try {
+                        loadedData = JSON.parse(event.target.result);
+                        processarDados(loadedData);
+                        showMessage('success', '✅ Arquivo carregado com sucesso!');
+                    } catch (error) {
+                        showMessage('error', `❌ Erro ao processar arquivo: ${error.message}`);
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        // Verificar dados locais
+        window.verificarDadosLocais = function() {
+            const localData = {
+                evaluations: [],
+                questionnaireData: {}
+            };
+            
+            // Buscar dados do localStorage
+            const evaluationsStr = localStorage.getItem('evaluations');
+            const questionnaireStr = localStorage.getItem('questionnaireData');
+            
+            if (evaluationsStr) {
+                try {
+                    localData.evaluations = JSON.parse(evaluationsStr);
+                } catch (e) {
+                    console.error('Erro ao parsear evaluations:', e);
+                }
+            }
+            
+            if (questionnaireStr) {
+                try {
+                    localData.questionnaireData = JSON.parse(questionnaireStr);
+                } catch (e) {
+                    console.error('Erro ao parsear questionnaireData:', e);
+                }
+            }
+            
+            if (Object.keys(localData.questionnaireData).length > 0 || localData.evaluations.length > 0) {
+                loadedData = localData;
+                processarDados(localData);
+                showMessage('info', 'ℹ️ Dados locais carregados do navegador');
+            } else {
+                showMessage('error', '❌ Nenhum dado encontrado no localStorage');
+            }
+        };
+        
+        // Processar e exibir dados
+        function processarDados(data) {
+            // Contar avaliações
+            let totalAvaliacoes = 0;
+            let avaliacoes = [];
+            
+            // Processar questionnaireData
+            if (data.questionnaireData) {
+                Object.entries(data.questionnaireData).forEach(([date, evaluation]) => {
+                    totalAvaliacoes++;
+                    avaliacoes.push({
+                        tipo: 'Questionário',
+                        data: date,
+                        paciente: evaluation.patientInfo?.name || 'Sem nome',
+                        questoes: Object.keys(evaluation.responses || {}).length,
+                        pontuacao: evaluation.totalScore || 0,
+                        dados: evaluation
+                    });
+                });
+            }
+            
+            // Processar evaluations array
+            if (data.evaluations && Array.isArray(data.evaluations)) {
+                data.evaluations.forEach(evaluation => {
+                    totalAvaliacoes++;
+                    avaliacoes.push({
+                        tipo: 'Avaliação',
+                        data: evaluation.patientInfo?.evaluationDate || evaluation.createdAt,
+                        paciente: evaluation.patientInfo?.name || 'Sem nome',
+                        questoes: 0,
+                        pontuacao: 0,
+                        dados: evaluation
+                    });
+                });
+            }
+            
+            // Exibir resumo
+            document.getElementById('data-summary').innerHTML = `
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-number">${totalAvaliacoes}</div>
+                        <div class="stat-label">Total de Avaliações</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">${avaliacoes.reduce((sum, a) => sum + a.questoes, 0)}</div>
+                        <div class="stat-label">Total de Questões</div>
+                    </div>
+                </div>
+            `;
+            
+            // Exibir lista de avaliações
+            let html = '';
+            avaliacoes.forEach((avaliacao, index) => {
+                html += `
+                    <div class="evaluation-card">
+                        <h3>${avaliacao.tipo} #${index + 1}</h3>
+                        <p><strong>Paciente:</strong> ${avaliacao.paciente}</p>
+                        <p><strong>Data:</strong> ${avaliacao.data}</p>
+                        <p><strong>Questões respondidas:</strong> ${avaliacao.questoes}</p>
+                        ${avaliacao.pontuacao ? `<p><strong>Pontuação total:</strong> ${avaliacao.pontuacao}</p>` : ''}
+                        <button onclick="enviarAvaliacaoIndividual(${index})">📤 Enviar ao Firebase</button>
+                        <details>
+                            <summary>Ver dados completos</summary>
+                            <pre>${JSON.stringify(avaliacao.dados, null, 2)}</pre>
+                        </details>
+                    </div>
+                `;
+            });
+            
+            document.getElementById('evaluations-list').innerHTML = html || '<p>Nenhuma avaliação encontrada</p>';
+            
+            // Armazenar avaliações globalmente
+            window.avaliacoes = avaliacoes;
+        }
+        
+        // Enviar avaliação individual
+        window.enviarAvaliacaoIndividual = async function(index) {
+            if (!window.firebaseApp) {
+                const success = await initFirebase();
+                if (!success) {
+                    showMessage('error', '❌ Não foi possível conectar ao Firebase');
+                    return;
+                }
+            }
+            
+            const avaliacao = window.avaliacoes[index];
+            showLoading(true);
+            
+            try {
+                // Preparar dados para o Firebase
+                const dadosParaEnviar = {
+                    ...avaliacao.dados,
+                    uploadedAt: new Date().toISOString(),
+                    uploadedFrom: 'restauracao'
+                };
+                
+                // Verificar se já existe
+                const q = query(
+                    collection(db, 'evaluations'),
+                    where('patientInfo.name', '==', avaliacao.paciente),
+                    where('patientInfo.evaluationDate', '==', avaliacao.data)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (!querySnapshot.empty) {
+                    const confirmUpdate = confirm(`Já existe uma avaliação para ${avaliacao.paciente} em ${avaliacao.data}. Deseja criar uma nova cópia mesmo assim?`);
+                    if (!confirmUpdate) {
+                        showLoading(false);
+                        return;
+                    }
+                }
+                
+                // Enviar ao Firebase
+                const docRef = await addDoc(collection(db, 'evaluations'), dadosParaEnviar);
+                
+                addToLog(`✅ Avaliação ${index + 1} enviada com sucesso! ID: ${docRef.id}`);
+                showMessage('success', `✅ Avaliação de ${avaliacao.paciente} enviada com sucesso!`);
+            } catch (error) {
+                console.error('Erro ao enviar:', error);
+                addToLog(`❌ Erro ao enviar avaliação ${index + 1}: ${error.message}`);
+                showMessage('error', `❌ Erro ao enviar: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        };
+        
+        // Enviar todas as avaliações
+        window.enviarTodosAoFirebase = async function() {
+            if (!window.avaliacoes || window.avaliacoes.length === 0) {
+                showMessage('error', '❌ Nenhuma avaliação carregada para enviar');
+                return;
+            }
+            
+            if (!window.firebaseApp) {
+                const success = await initFirebase();
+                if (!success) {
+                    showMessage('error', '❌ Não foi possível conectar ao Firebase');
+                    return;
+                }
+            }
+            
+            const confirmAll = confirm(`Deseja enviar todas as ${window.avaliacoes.length} avaliações ao Firebase?`);
+            if (!confirmAll) return;
+            
+            showLoading(true);
+            document.getElementById('send-all-btn').disabled = true;
+            
+            let sucessos = 0;
+            let erros = 0;
+            
+            for (let i = 0; i < window.avaliacoes.length; i++) {
+                try {
+                    const avaliacao = window.avaliacoes[i];
+                    const dadosParaEnviar = {
+                        ...avaliacao.dados,
+                        uploadedAt: new Date().toISOString(),
+                        uploadedFrom: 'restauracao-batch'
+                    };
+                    
+                    const docRef = await addDoc(collection(db, 'evaluations'), dadosParaEnviar);
+                    addToLog(`✅ [${i + 1}/${window.avaliacoes.length}] Enviada: ${avaliacao.paciente} - ID: ${docRef.id}`);
+                    sucessos++;
+                } catch (error) {
+                    addToLog(`❌ [${i + 1}/${window.avaliacoes.length}] Erro: ${error.message}`);
+                    erros++;
+                }
+            }
+            
+            showLoading(false);
+            document.getElementById('send-all-btn').disabled = false;
+            
+            showMessage('info', `📊 Resultado: ${sucessos} enviadas com sucesso, ${erros} erros`);
+        };
+        
+        // Funções auxiliares
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('active', show);
+        }
+        
+        function showMessage(type, message) {
+            const div = document.createElement('div');
+            div.className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            div.textContent = message;
+            div.style.animation = 'fadeIn 0.3s';
+            
+            const container = document.querySelector('.container');
+            container.insertBefore(div, container.children[2]);
+            
+            setTimeout(() => div.remove(), 5000);
+        }
+        
+        function addToLog(message) {
+            const logDiv = document.getElementById('send-log');
+            const entry = document.createElement('div');
+            entry.style.padding = '10px';
+            entry.style.borderBottom = '1px solid #eee';
+            entry.innerHTML = `<small>[${new Date().toLocaleTimeString()}]</small> ${message}`;
+            logDiv.insertBefore(entry, logDiv.firstChild);
+        }
+        
+        // Inicializar ao carregar
+        initFirebase();
+    </script>
+</body>
+</html>
