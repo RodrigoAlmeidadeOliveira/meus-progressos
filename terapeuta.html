@@ -6,7 +6,6 @@
     <title>Painel do Terapeuta - Meus Progressos</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="styles-terapeuta.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Firebase SDK -->
     <script type="module">
@@ -754,77 +753,137 @@
     <!-- Inicialização do Sistema de Relatórios -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Aguardar carregamento completo dos scripts
+            console.log('🚀 Inicializando sistema de relatórios...');
+            
+            // Função para inicializar relatórios
+            function initializeReportsSystem() {
+                return new Promise((resolve, reject) => {
+                    // Aguardar ReportsManager estar disponível
+                    let attempts = 0;
+                    const maxAttempts = 50;
+                    
+                    function checkReportsManager() {
+                        if (window.ReportsManager && typeof window.ReportsManager === 'function') {
+                            try {
+                                window.reportsManager = new window.ReportsManager();
+                                console.log('✅ Sistema de relatórios inicializado com sucesso');
+                                resolve();
+                            } catch (error) {
+                                console.error('❌ Erro ao criar ReportsManager:', error);
+                                reject(error);
+                            }
+                        } else if (attempts < maxAttempts) {
+                            attempts++;
+                            setTimeout(checkReportsManager, 200);
+                        } else {
+                            console.error('❌ Timeout: ReportsManager não foi carregado');
+                            reject(new Error('ReportsManager timeout'));
+                        }
+                    }
+                    
+                    checkReportsManager();
+                });
+            }
+            
+            // Inicializar sistema após carregamento
             setTimeout(() => {
-                if (window.reportsManager) {
-                    console.log('✅ Sistema de relatórios inicializado');
-                    
-                    // Configurar eventos dos botões de relatório
-                    const tabButtons = document.querySelectorAll('.tab-btn');
-                    tabButtons.forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const tabId = this.dataset.tab;
-                            window.reportsManager.showTab(tabId);
-                            
-                            // Remover classe active de todos os botões
-                            tabButtons.forEach(b => b.classList.remove('active'));
-                            this.classList.add('active');
-                            
-                            // Mostrar aba correspondente
-                            document.querySelectorAll('.report-tab').forEach(tab => {
-                                tab.classList.remove('active');
-                            });
-                            document.getElementById(tabId + '-tab').classList.add('active');
-                        });
+                initializeReportsSystem()
+                    .then(() => setupReportsEventListeners())
+                    .catch(error => {
+                        console.error('❌ Falha na inicialização dos relatórios:', error);
+                        // Tentar novamente em 3 segundos
+                        setTimeout(() => {
+                            initializeReportsSystem()
+                                .then(() => setupReportsEventListeners())
+                                .catch(err => console.error('❌ Segunda tentativa falhou:', err));
+                        }, 3000);
                     });
-                    
-                    // Configurar filtros de relatório
-                    const applyFiltersBtn = document.getElementById('apply-report-filters');
-                    const clearFiltersBtn = document.getElementById('clear-report-filters');
-                    
-                    if (applyFiltersBtn) {
-                        applyFiltersBtn.addEventListener('click', () => {
-                            const patientSelect = document.getElementById('report-patient-select');
-                            const dateFrom = document.getElementById('report-date-from');
-                            const dateTo = document.getElementById('report-date-to');
-                            
-                            window.reportsManager.applyFilters({
-                                patient: patientSelect?.value || '',
-                                dateFrom: dateFrom?.value || '',
-                                dateTo: dateTo?.value || ''
-                            });
-                        });
-                    }
-                    
-                    if (clearFiltersBtn) {
-                        clearFiltersBtn.addEventListener('click', () => {
-                            document.getElementById('report-patient-select').value = '';
-                            document.getElementById('report-date-from').value = '';
-                            document.getElementById('report-date-to').value = '';
-                            window.reportsManager.clearFilters();
-                        });
-                    }
-                    
-                    // Configurar botões de exportação PDF
-                    document.querySelectorAll('.export-btn, #export-complete-report').forEach(btn => {
-                        btn.addEventListener('click', function() {
-                            const reportType = this.dataset.exportPdf || 'complete';
-                            window.reportsManager.exportToPDF(reportType);
-                        });
-                    });
-                    
-                    // Configurar botão de atualização dos relatórios
-                    const refreshReportsBtn = document.getElementById('refresh-reports');
-                    if (refreshReportsBtn) {
-                        refreshReportsBtn.addEventListener('click', () => {
-                            window.reportsManager.refreshData();
-                        });
-                    }
-                } else {
-                    console.error('❌ Sistema de relatórios não foi carregado corretamente');
-                }
-            }, 1000);
+            }, 1500);
         });
+
+        function setupReportsEventListeners() {
+            // Configurar eventos dos botões de relatório
+            const tabButtons = document.querySelectorAll('.tab-btn');
+            tabButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const tabId = this.dataset.tab;
+                    if (window.reportsManager && typeof window.reportsManager.showTab === 'function') {
+                        window.reportsManager.showTab(tabId);
+                    }
+                    
+                    // Remover classe active de todos os botões
+                    tabButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Mostrar aba correspondente
+                    document.querySelectorAll('.report-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    const targetTab = document.getElementById(tabId + '-tab');
+                    if (targetTab) {
+                        targetTab.classList.add('active');
+                    }
+                });
+            });
+            
+            // Configurar filtros de relatório
+            const applyFiltersBtn = document.getElementById('apply-report-filters');
+            const clearFiltersBtn = document.getElementById('clear-report-filters');
+            
+            if (applyFiltersBtn) {
+                applyFiltersBtn.addEventListener('click', () => {
+                    const patientSelect = document.getElementById('report-patient-select');
+                    const dateFrom = document.getElementById('report-date-from');
+                    const dateTo = document.getElementById('report-date-to');
+                    
+                    if (window.reportsManager && typeof window.reportsManager.applyFilters === 'function') {
+                        window.reportsManager.applyFilters({
+                            patient: patientSelect?.value || '',
+                            dateFrom: dateFrom?.value || '',
+                            dateTo: dateTo?.value || ''
+                        });
+                    }
+                });
+            }
+            
+            if (clearFiltersBtn) {
+                clearFiltersBtn.addEventListener('click', () => {
+                    const patientSelect = document.getElementById('report-patient-select');
+                    const dateFromInput = document.getElementById('report-date-from');
+                    const dateToInput = document.getElementById('report-date-to');
+                    
+                    if (patientSelect) patientSelect.value = '';
+                    if (dateFromInput) dateFromInput.value = '';
+                    if (dateToInput) dateToInput.value = '';
+                    
+                    if (window.reportsManager && typeof window.reportsManager.clearFilters === 'function') {
+                        window.reportsManager.clearFilters();
+                    }
+                });
+            }
+            
+            // Configurar botões de exportação PDF
+            document.querySelectorAll('.export-btn, #export-complete-report').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const reportType = this.dataset.exportPdf || 'complete';
+                    if (window.reportsManager && typeof window.reportsManager.exportToPDF === 'function') {
+                        window.reportsManager.exportToPDF(reportType);
+                    }
+                });
+            });
+            
+            // Configurar botão de atualização dos relatórios
+            const refreshReportsBtn = document.getElementById('refresh-reports');
+            if (refreshReportsBtn) {
+                refreshReportsBtn.addEventListener('click', () => {
+                    if (window.reportsManager && typeof window.reportsManager.refreshData === 'function') {
+                        window.reportsManager.refreshData();
+                    }
+                });
+            }
+            
+            console.log('✅ Event listeners dos relatórios configurados');
+        }
     </script>
 </body>
 </html>

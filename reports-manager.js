@@ -44,13 +44,26 @@ class ReportsManager {
     }
 
     async loadChartLibraries() {
-        // Carregar Chart.js se não estiver carregado
-        if (typeof Chart === 'undefined') {
-            const script = document.createElement('script');
-            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js';
-            script.onload = () => console.log('✅ Chart.js carregado');
-            document.head.appendChild(script);
+        // Verificar se Chart.js já está carregado
+        if (typeof Chart !== 'undefined') {
+            console.log('✅ Chart.js já está disponível');
+            return Promise.resolve();
         }
+
+        // Carregar Chart.js se não estiver carregado
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js';
+            script.onload = () => {
+                console.log('✅ Chart.js carregado com sucesso');
+                resolve();
+            };
+            script.onerror = (error) => {
+                console.error('❌ Erro ao carregar Chart.js:', error);
+                reject(error);
+            };
+            document.head.appendChild(script);
+        });
 
         // Carregar jsPDF e html2canvas para PDF
         if (typeof jsPDF === 'undefined') {
