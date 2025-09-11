@@ -1,5 +1,6 @@
 // Script melhorado para o Painel do Terapeuta
 // Sistema robusto com verificação de conexão e backup de dados
+// Versão: 2.1 - Correção strict mode
 
 // Gerenciador de Firebase melhorado para Terapeutas
 class FirebaseManagerTerapeutaMelhorado {
