@@ -699,8 +699,11 @@ class TerapeutaPanelMelhorado {
     }
 
     populateEvaluationsList(evaluations) {
-        const listContainer = document.getElementById('evaluations-list');
-        if (!listContainer) return;
+        const listContainer = document.getElementById('patients-list');
+        if (!listContainer) {
+            console.error('❌ Terapeuta: Elemento patients-list não encontrado');
+            return;
+        }
 
         if (evaluations.length === 0) {
             listContainer.innerHTML = `
@@ -712,10 +715,202 @@ class TerapeutaPanelMelhorado {
             return;
         }
 
-        listContainer.innerHTML = evaluations.map(evaluation => this.createEvaluationCard(evaluation)).join('');
+        // Agrupar avaliações por paciente
+        const patientGroups = this.groupEvaluationsByPatient(evaluations);
+        listContainer.innerHTML = Object.values(patientGroups).map(patientGroup => this.createPatientCard(patientGroup)).join('');
         
         // Adicionar event listeners para as ações
         this.attachCardEventListeners();
+    }
+
+    groupEvaluationsByPatient(evaluations) {
+        const groups = {};
+        
+        evaluations.forEach(evaluation => {
+            const patientName = evaluation.patientInfo?.name || 'Nome não informado';
+            const key = patientName.toLowerCase().trim();
+            
+            if (!groups[key]) {
+                groups[key] = {
+                    patientName: patientName,
+                    evaluations: [],
+                    lastEvaluation: null,
+                    totalEvaluations: 0
+                };
+            }
+            
+            groups[key].evaluations.push(evaluation);
+            groups[key].totalEvaluations++;
+            
+            // Determinar última avaliação
+            const evalDate = new Date(evaluation.patientInfo?.evaluationDate || evaluation.createdAt);
+            if (!groups[key].lastEvaluation || evalDate > new Date(groups[key].lastEvaluation.patientInfo?.evaluationDate || groups[key].lastEvaluation.createdAt)) {
+                groups[key].lastEvaluation = evaluation;
+            }
+        });
+        
+        return groups;
+    }
+
+    createPatientCard(patientGroup) {
+        const { patientName, evaluations, lastEvaluation, totalEvaluations } = patientGroup;
+        const lastEvalDate = lastEvaluation?.patientInfo?.evaluationDate || lastEvaluation?.createdAt;
+        const formattedDate = lastEvalDate ? new Date(lastEvalDate).toLocaleDateString('pt-BR') : 'Não informado';
+        
+        // Calcular pontuação média das últimas avaliações
+        const avgScore = this.calculateAverageScore(evaluations);
+        
+        // Determinar fonte dos dados (Firebase ou Local)
+        const hasCloudData = evaluations.some(e => e.source === 'firebase');
+        const hasLocalData = evaluations.some(e => e.source !== 'firebase');
+        
+        let sourceIndicator = '';
+        if (hasCloudData && hasLocalData) {
+            sourceIndicator = '☁️💾';
+        } else if (hasCloudData) {
+            sourceIndicator = '☁️';
+        } else {
+            sourceIndicator = '💾';
+        }
+        
+        return `
+            <div class="patient-card" data-patient="${patientName}">
+                <div class="patient-header">
+                    <div class="patient-info">
+                        <h3 class="patient-name">${patientName} ${sourceIndicator}</h3>
+                        <p class="patient-stats">${totalEvaluations} avaliação${totalEvaluations > 1 ? 'ões' : ''}</p>
+                    </div>
+                    <div class="patient-actions">
+                        <button class="btn-view-patient" data-patient="${patientName}">
+                            👁️ Ver Detalhes
+                        </button>
+                    </div>
+                </div>
+                <div class="patient-summary">
+                    <div class="summary-item">
+                        <label>Última Avaliação:</label>
+                        <span>${formattedDate}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Pontuação Média:</label>
+                        <span class="score-badge ${this.getScoreClass(avgScore)}">${avgScore.toFixed(1)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <label>Avaliador:</label>
+                        <span>${lastEvaluation?.evaluatorInfo?.name || 'Não informado'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    calculateAverageScore(evaluations) {
+        if (!evaluations || evaluations.length === 0) return 0;
+        
+        let totalScore = 0;
+        let validEvaluations = 0;
+        
+        evaluations.forEach(evaluation => {
+            if (evaluation.responses) {
+                const scores = Object.values(evaluation.responses).filter(score => typeof score === 'number');
+                if (scores.length > 0) {
+                    const evalAvg = scores.reduce((sum, score) => sum + score, 0) / scores.length;
+                    totalScore += evalAvg;
+                    validEvaluations++;
+                }
+            }
+        });
+        
+        return validEvaluations > 0 ? totalScore / validEvaluations : 0;
+    }
+
+    getScoreClass(score) {
+        if (score >= 4) return 'high-score';
+        if (score >= 3) return 'medium-score';
+        if (score >= 2) return 'low-score';
+        return 'very-low-score';
+    }
+
+    attachCardEventListeners() {
+        // Event listeners para botões de ver detalhes do paciente
+        document.querySelectorAll('.btn-view-patient').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const patientName = e.target.dataset.patient;
+                this.showPatientDetails(patientName);
+            });
+        });
+    }
+
+    async showPatientDetails(patientName) {
+        console.log(`👤 Terapeuta: Mostrando detalhes do paciente: ${patientName}`);
+        
+        try {
+            const patientEvaluations = await this.firebaseManager.getEvaluationsByPatient(patientName);
+            
+            if (patientEvaluations.length === 0) {
+                this.showNotification('Nenhuma avaliação encontrada para este paciente', 'warning');
+                return;
+            }
+
+            // Atualizar seção de detalhes do paciente
+            const detailsSection = document.getElementById('patient-details');
+            const patientNameTitle = document.getElementById('patient-name-title');
+            const patientTotalEvaluations = document.getElementById('patient-total-evaluations');
+            const patientFirstEvaluation = document.getElementById('patient-first-evaluation');
+            const patientLastEvaluation = document.getElementById('patient-last-evaluation');
+            const patientProgress = document.getElementById('patient-progress');
+            const evaluationsTimeline = document.getElementById('evaluations-timeline');
+
+            if (detailsSection && patientNameTitle) {
+                patientNameTitle.textContent = patientName;
+                
+                // Calcular estatísticas do paciente
+                const sortedEvaluations = patientEvaluations.sort((a, b) => 
+                    new Date(a.patientInfo?.evaluationDate || a.createdAt) - 
+                    new Date(b.patientInfo?.evaluationDate || b.createdAt)
+                );
+                
+                const firstEval = sortedEvaluations[0];
+                const lastEval = sortedEvaluations[sortedEvaluations.length - 1];
+                
+                const firstDate = firstEval?.patientInfo?.evaluationDate || firstEval?.createdAt;
+                const lastDate = lastEval?.patientInfo?.evaluationDate || lastEval?.createdAt;
+                
+                if (patientTotalEvaluations) patientTotalEvaluations.textContent = patientEvaluations.length;
+                if (patientFirstEvaluation) patientFirstEvaluation.textContent = firstDate ? new Date(firstDate).toLocaleDateString('pt-BR') : 'N/A';
+                if (patientLastEvaluation) patientLastEvaluation.textContent = lastDate ? new Date(lastDate).toLocaleDateString('pt-BR') : 'N/A';
+                
+                // Calcular progresso geral
+                const firstScore = this.calculateAverageScore([firstEval]);
+                const lastScore = this.calculateAverageScore([lastEval]);
+                const progressIndicator = lastScore > firstScore ? '📈 Melhoria' : lastScore < firstScore ? '📉 Declínio' : '➡️ Estável';
+                if (patientProgress) patientProgress.textContent = progressIndicator;
+                
+                // Preencher timeline de avaliações
+                if (evaluationsTimeline) {
+                    evaluationsTimeline.innerHTML = sortedEvaluations.map(eval => `
+                        <div class="timeline-item" data-source="${eval.source}">
+                            <div class="timeline-date">${new Date(eval.patientInfo?.evaluationDate || eval.createdAt).toLocaleDateString('pt-BR')}</div>
+                            <div class="timeline-content">
+                                <div class="timeline-evaluator">Avaliador: ${eval.evaluatorInfo?.name || 'Não informado'}</div>
+                                <div class="timeline-score">Pontuação: ${this.calculateAverageScore([eval]).toFixed(1)}</div>
+                                <div class="timeline-source">${eval.source === 'firebase' ? '☁️ Nuvem' : '💾 Local'}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+                
+                // Mostrar seção de detalhes
+                detailsSection.style.display = 'block';
+                detailsSection.scrollIntoView({ behavior: 'smooth' });
+                
+                // Gerar gráficos do paciente
+                this.generatePatientCharts(patientEvaluations);
+            }
+        } catch (error) {
+            console.error('❌ Terapeuta: Erro ao mostrar detalhes:', error);
+            this.showNotification('Erro ao carregar detalhes do paciente', 'error');
+        }
     }
 
     createEvaluationCard(evaluation) {
@@ -1224,6 +1419,178 @@ terapeutaStyle.textContent = `
         height: 40px;
         animation: spin 1s linear infinite;
         margin: 0 auto 20px;
+    }
+
+    /* Estilos para cartões de pacientes */
+    .patient-card {
+        background: white;
+        border-radius: 10px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+    }
+
+    .patient-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .patient-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid #f0f0f0;
+    }
+
+    .patient-name {
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .patient-stats {
+        color: #7f8c8d;
+        margin: 0.25rem 0 0 0;
+        font-size: 0.9rem;
+    }
+
+    .btn-view-patient {
+        background: #3498db;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.3s ease;
+    }
+
+    .btn-view-patient:hover {
+        background: #2980b9;
+    }
+
+    .patient-summary {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0;
+    }
+
+    .summary-item label {
+        font-weight: 500;
+        color: #555;
+    }
+
+    .summary-item span {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+
+    .score-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 15px;
+        color: white;
+        font-weight: bold;
+        font-size: 0.85rem;
+    }
+
+    .high-score {
+        background: #27ae60;
+    }
+
+    .medium-score {
+        background: #f39c12;
+    }
+
+    .low-score {
+        background: #e67e22;
+    }
+
+    .very-low-score {
+        background: #e74c3c;
+    }
+
+    .no-data {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #7f8c8d;
+        background: #f8f9fa;
+        border-radius: 10px;
+        border: 2px dashed #bdc3c7;
+    }
+
+    .no-data p {
+        margin: 0.5rem 0;
+    }
+
+    /* Timeline styles */
+    .timeline-item {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #3498db;
+        position: relative;
+    }
+
+    .timeline-item[data-source="firebase"] {
+        border-left-color: #27ae60;
+    }
+
+    .timeline-item[data-source="local"] {
+        border-left-color: #f39c12;
+    }
+
+    .timeline-date {
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+    }
+
+    .timeline-content {
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.9rem;
+        color: #555;
+    }
+
+    .timeline-source {
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .patient-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
+        }
+
+        .patient-actions {
+            align-self: stretch;
+        }
+
+        .btn-view-patient {
+            width: 100%;
+        }
+
+        .summary-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
     }
     
     @keyframes spin {
