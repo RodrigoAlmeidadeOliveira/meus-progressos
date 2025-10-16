@@ -549,6 +549,7 @@ class FirebaseManagerTerapeutaMelhorado {
     }
 
     async runDeduplication() {
+        console.log('♻️ Terapeuta: Correção de duplicados solicitada pelo usuário.');
         if (this.firebaseManager.connectionStatus !== 'connected') {
             this.showNotification('Conecte-se ao Firebase para corrigir duplicadas.', 'warning');
             return;
@@ -563,6 +564,7 @@ class FirebaseManagerTerapeutaMelhorado {
                 `Correção concluída: ${result.removed} duplicata(s) removida(s).`,
                 result.removed > 0 ? 'success' : 'info'
             );
+            console.log('♻️ Terapeuta: Resultado da deduplicação manual', result);
             await this.refreshData(true);
         } catch (error) {
             console.error('❌ Erro ao remover duplicadas:', error);
@@ -1254,19 +1256,42 @@ class TerapeutaPanelMelhorado {
         const metric = this.analyticsControls.metric?.value || 'averagePercent';
 
         const rows = this.aggregateAnalyticsData(filtered, grouping);
-        if (rows.length === 0) {
-            container.innerHTML = `
+        const orderedRows = rows.length ? this.sortAnalyticsRows(rows, metric) : [];
+        
+        const summaryHtml = rows.length
+            ? this.renderAnalyticsSummaryTable(orderedRows, grouping, metric)
+            : `
                 <div class="analytics-empty">
-                    <h4>Não foi possível consolidar os dados</h4>
-                    <p>Verifique se as avaliações possuem pontuações registradas.</p>
+                    <h4>Resumo não disponível</h4>
+                    <p>Não foi possível calcular métricas agregadas para o filtro atual.</p>
                 </div>
-            `;
-            this.updateAnalyticsSummary([], filtered);
-            return;
-        }
+              `;
 
-        const orderedRows = this.sortAnalyticsRows(rows, metric);
-        container.innerHTML = this.renderAnalyticsTable(orderedRows, grouping, metric);
+        const duplicates = this.findDuplicateEvaluations(filtered);
+        const duplicateIds = new Set(duplicates.map(item => item.id));
+        const detailTable = this.renderAnalyticsDetailedTable(filtered, duplicateIds);
+        const duplicateBanner = duplicates.length
+            ? this.renderDuplicateBanner(duplicates)
+            : '';
+
+        container.innerHTML = `
+            ${duplicateBanner}
+            <div class="analytics-block">
+                <div class="analytics-block-header">
+                    <h4>Resumo Analítico</h4>
+                    <span class="analytics-metric-badge">Ordenado por: ${this.getMetricLabel(metric)}</span>
+                </div>
+                ${summaryHtml}
+            </div>
+            <div class="analytics-block">
+                <div class="analytics-block-header">
+                    <h4>Respostas Detalhadas</h4>
+                    <span class="analytics-metric-badge">${detailTable.countLabel}</span>
+                </div>
+                ${detailTable.html}
+            </div>
+        `;
+
         this.updateAnalyticsSummary(orderedRows, filtered, metric, grouping);
     }
 
@@ -1680,7 +1705,7 @@ class TerapeutaPanelMelhorado {
         return [...rows].sort((a, b) => getValue(b) - getValue(a));
     }
 
-    renderAnalyticsTable(rows, grouping, metric) {
+    renderAnalyticsSummaryTable(rows, grouping, metric) {
         if (!rows.length) {
             return `
                 <div class="analytics-empty">
@@ -1706,7 +1731,7 @@ class TerapeutaPanelMelhorado {
 
         const bodyRows = rows.map(row => `
             <tr>
-                <td>${row.label}</td>
+                <td>${this.escapeHtml(row.label)}</td>
                 <td>${row.count}</td>
                 <td>${this.formatPercentage(row.averagePercent)}</td>
                 <td>${this.formatScore(row.averageScore)}</td>
@@ -1738,6 +1763,188 @@ class TerapeutaPanelMelhorado {
             return `<span class="metric-pill positive">▲ +${rounded} pts</span>`;
         }
         return `<span class="metric-pill negative">▼ ${rounded} pts</span>`;
+    }
+
+    getMetricLabel(metric) {
+        const labels = {
+            averagePercent: 'Pontuação média (%)',
+            averageScore: 'Pontuação média (total)',
+            count: 'Número de avaliações',
+            lastScore: 'Última pontuação (%)'
+        };
+        return labels[metric] || labels.averagePercent;
+    }
+
+    renderAnalyticsDetailedTable(evaluations, duplicateIds = new Set()) {
+        const detailRows = [];
+
+        evaluations.forEach((evaluation) => {
+            if (!evaluation || !evaluation.responses) return;
+
+            const patientName = evaluation.patientInfo?.name || 'Paciente não informado';
+            const evaluatorName = evaluation.evaluatorInfo?.name || 'Avaliador não informado';
+            const evaluationDateObj = this.parseEvaluationDate(evaluation);
+            const evaluationDateDisplay = evaluationDateObj
+                ? evaluationDateObj.toLocaleDateString('pt-BR')
+                : (evaluation.patientInfo?.evaluationDate || 'N/A');
+            const evaluationId = this.getEvaluationId(evaluation);
+            const sourceLabel = evaluation.source === 'firebase'
+                ? '☁️ Firebase'
+                : (evaluation.source === 'local' || evaluation.localOnly)
+                    ? '💾 Local'
+                    : '—';
+
+            Object.entries(evaluation.responses || {}).forEach(([questionId, response]) => {
+                const questionNumber = parseInt(String(questionId).replace(/\D/g, ''), 10);
+                const questionText = response?.question || `Questão ${questionNumber || questionId}`;
+                const score = typeof response === 'number'
+                    ? response
+                    : (typeof response?.score === 'number' ? response.score : null);
+
+                detailRows.push({
+                    evaluationId,
+                    evaluationDateObj,
+                    evaluationDateDisplay,
+                    patientName,
+                    evaluatorName,
+                    questionNumber,
+                    questionId,
+                    questionText,
+                    score,
+                    sourceLabel
+                });
+            });
+        });
+
+        if (!detailRows.length) {
+            return {
+                countLabel: '0 respostas encontradas',
+                html: `
+                    <div class="analytics-empty">
+                        <h4>Nenhuma resposta encontrada</h4>
+                        <p>Complete uma avaliação ou ajuste os filtros para visualizar as respostas.</p>
+                    </div>
+                `
+            };
+        }
+
+        detailRows.sort((a, b) => {
+            const dateA = a.evaluationDateObj ? a.evaluationDateObj.getTime() : 0;
+            const dateB = b.evaluationDateObj ? b.evaluationDateObj.getTime() : 0;
+            if (dateA !== dateB) {
+                return dateA - dateB;
+            }
+            return (a.questionNumber || 0) - (b.questionNumber || 0);
+        });
+
+        const duplicateClass = (evaluationId) => duplicateIds.has(evaluationId) ? 'duplicate-row' : '';
+
+        const rowsHtml = detailRows.map(row => `
+            <tr class="${duplicateClass(row.evaluationId)}" data-evaluation-id="${this.escapeHtml(row.evaluationId)}">
+                <td>${this.escapeHtml(row.evaluationId)}</td>
+                <td>${this.escapeHtml(row.patientName)}</td>
+                <td>${this.escapeHtml(row.evaluationDateDisplay)}</td>
+                <td>${row.questionNumber || this.escapeHtml(row.questionId)}</td>
+                <td>${this.escapeHtml(row.questionText)}</td>
+                <td>${row.score ?? '—'}</td>
+                <td>${row.sourceLabel}</td>
+            </tr>
+        `).join('');
+
+        return {
+            countLabel: `${detailRows.length} respostas`,
+            html: `
+                <div class="analytics-table-wrapper analytics-detailed-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Avaliação</th>
+                                <th>Paciente</th>
+                                <th>Data</th>
+                                <th>Questão</th>
+                                <th>Descrição</th>
+                                <th>Pontuação</th>
+                                <th>Origem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            `
+        };
+    }
+
+    findDuplicateEvaluations(evaluations) {
+        const counter = new Map();
+        evaluations.forEach(evaluation => {
+            const id = this.getEvaluationId(evaluation);
+            if (!id) return;
+            counter.set(id, (counter.get(id) || 0) + 1);
+        });
+
+        return Array.from(counter.entries())
+            .filter(([, count]) => count > 1)
+            .map(([id, count]) => ({ id, count }));
+    }
+
+    renderDuplicateBanner(duplicates) {
+        if (!duplicates.length) return '';
+
+        const totalDuplicated = duplicates.reduce((sum, item) => sum + item.count, 0);
+        const listItems = duplicates.map(item => `
+            <li>
+                <code>${this.escapeHtml(item.id)}</code> • ${item.count} registros
+            </li>
+        `).join('');
+
+        return `
+            <div class="analytics-warning">
+                <div class="analytics-warning-content">
+                    <strong>⚠️ Avaliações duplicadas detectadas</strong>
+                    <p>Identificamos ${duplicates.length} avaliação(ões) com múltiplas cópias (${totalDuplicated} registros no total).</p>
+                    <ul>${listItems}</ul>
+                </div>
+                <div class="analytics-warning-actions">
+                    <button class="btn-primary" onclick="window.terapeutaPanel.runDeduplication()">
+                        ♻️ Corrigir duplicados agora
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    getEvaluationId(evaluation) {
+        if (!evaluation) return null;
+        if (evaluation.evaluationId) return evaluation.evaluationId;
+
+        if (this.firebaseManager && typeof this.firebaseManager.generateEvaluationIdFromData === 'function') {
+            return this.firebaseManager.generateEvaluationIdFromData(evaluation);
+        }
+
+        const name = (evaluation.patientInfo?.name || 'avaliacao')
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_]/g, '');
+
+        const rawDate = evaluation.patientInfo?.evaluationDate ||
+            evaluation.createdAt ||
+            new Date().toISOString();
+
+        const datePart = String(rawDate).split('T')[0];
+
+        return `${name}_${datePart}`;
+    }
+
+    escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
     }
 
     formatPercentage(value) {
