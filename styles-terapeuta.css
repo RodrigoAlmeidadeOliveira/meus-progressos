@@ -113,6 +113,138 @@
     margin-top: 20px;
 }
 
+/* Consulta Analítica */
+.analytics-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.analytics-header {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+@media (min-width: 768px) {
+    .analytics-header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+    }
+}
+
+.analytics-summary {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.summary-card {
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 15px 20px;
+    min-width: 180px;
+}
+
+.summary-value {
+    display: block;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: #2d3748;
+}
+
+.summary-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #718096;
+}
+
+.analytics-filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.analytics-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.analytics-results {
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 20px;
+    background: #f8fafc;
+}
+
+.analytics-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.analytics-results table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.analytics-results thead {
+    background: #e6ebff;
+}
+
+.analytics-results th,
+.analytics-results td {
+    padding: 12px 15px;
+    text-align: left;
+    font-size: 14px;
+    border-bottom: 1px solid #edf2f7;
+}
+
+.analytics-results tbody tr:hover {
+    background: rgba(102, 126, 234, 0.08);
+}
+
+.metric-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #edf2f7;
+    color: #4a5568;
+}
+
+.metric-pill.positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.metric-pill.negative {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.analytics-empty {
+    text-align: center;
+    color: #4a5568;
+    padding: 30px 10px;
+}
+
+.analytics-empty h4 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+}
+
 /* Lista de Pacientes */
 .patients-section {
     background: white;

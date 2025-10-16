@@ -518,6 +518,7 @@ class TerapeutaPanelMelhorado {
         this.selectedEvaluations = [];
         this.autoRefreshInterval = null;
         this.lastReportDataUpdate = null;
+        this.analyticsControls = null;
         
         this.init();
     }
@@ -526,6 +527,7 @@ class TerapeutaPanelMelhorado {
         console.log('🚀 Terapeuta: Inicializando painel melhorado...');
         
         this.setupEventListeners();
+        this.setupAnalyticsControls();
         this.setupConnectionMonitor();
         this.setupAutoRefresh();
         this.initializeReportsManager();
@@ -608,6 +610,62 @@ class TerapeutaPanelMelhorado {
         if (exportButton) {
             exportButton.addEventListener('click', () => {
                 this.exportData();
+            });
+        }
+    }
+
+    setupAnalyticsControls() {
+        const panel = document.getElementById('analytics-menu');
+        if (!panel) {
+            console.warn('⚠️ Terapeuta: Painel analítico não encontrado');
+            return;
+        }
+
+        this.analyticsControls = {
+            panel,
+            grouping: document.getElementById('analytics-grouping'),
+            metric: document.getElementById('analytics-metric'),
+            patient: document.getElementById('analytics-patient'),
+            evaluator: document.getElementById('analytics-evaluator'),
+            dateFrom: document.getElementById('analytics-date-from'),
+            dateTo: document.getElementById('analytics-date-to'),
+            clear: document.getElementById('analytics-clear'),
+            run: document.getElementById('analytics-run'),
+            summary: {
+                total: document.getElementById('analytics-total-selected'),
+                averagePercent: document.getElementById('analytics-average-percent'),
+                bestGroup: document.getElementById('analytics-best-group')
+            },
+            resultsContainer: document.getElementById('analytics-results')
+        };
+
+        const autoUpdateHandler = () => this.updateAnalyticsResults();
+
+        ['grouping', 'metric', 'patient', 'evaluator'].forEach(key => {
+            const element = this.analyticsControls[key];
+            if (element) {
+                element.addEventListener('change', autoUpdateHandler);
+            }
+        });
+
+        ['dateFrom', 'dateTo'].forEach(key => {
+            const element = this.analyticsControls[key];
+            if (element) {
+                element.addEventListener('change', () => this.updateAnalyticsResults());
+            }
+        });
+
+        if (this.analyticsControls.run) {
+            this.analyticsControls.run.addEventListener('click', () => this.updateAnalyticsResults(true));
+        }
+
+        if (this.analyticsControls.clear) {
+            this.analyticsControls.clear.addEventListener('click', () => {
+                if (this.analyticsControls.patient) this.analyticsControls.patient.value = '';
+                if (this.analyticsControls.evaluator) this.analyticsControls.evaluator.value = '';
+                if (this.analyticsControls.dateFrom) this.analyticsControls.dateFrom.value = '';
+                if (this.analyticsControls.dateTo) this.analyticsControls.dateTo.value = '';
+                this.updateAnalyticsResults(true);
             });
         }
     }
@@ -743,6 +801,8 @@ class TerapeutaPanelMelhorado {
             
             this.updateStatistics(evaluations);
             this.populateEvaluationsList(evaluations);
+            this.populateAnalyticsFilters(evaluations);
+            this.updateAnalyticsResults();
             this.updateLastSyncTime();
             
             // Atualizar sistema de relatórios apenas se os dados mudaram
@@ -774,6 +834,8 @@ class TerapeutaPanelMelhorado {
             
             this.updateStatistics(evaluations);
             this.populateEvaluationsList(evaluations);
+            this.populateAnalyticsFilters(evaluations);
+            this.updateAnalyticsResults();
             this.updateLastSyncTime();
             
             // Atualizar sistema de relatórios apenas se os dados mudaram
@@ -943,6 +1005,673 @@ class TerapeutaPanelMelhorado {
         this.attachCardEventListeners();
         
         console.log('✅ Terapeuta: Lista de pacientes atualizada');
+    }
+
+    populateAnalyticsFilters(evaluations) {
+        if (!this.analyticsControls) {
+            return;
+        }
+
+        const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+        const patientSelect = this.analyticsControls.patient;
+        if (patientSelect) {
+            const selectedPatient = patientSelect.value;
+            const patientsMap = new Map();
+            evaluations.forEach(evaluation => {
+                const name = evaluation.patientInfo?.name?.trim();
+                if (!name) return;
+                const key = name.toLowerCase();
+                if (!patientsMap.has(key)) {
+                    patientsMap.set(key, name);
+                }
+            });
+            const patients = Array.from(patientsMap.values()).sort(collator.compare);
+            patientSelect.innerHTML = [
+                '<option value="">Todos os pacientes</option>',
+                ...patients.map(name => `<option value="${name}">${name}</option>`)
+            ].join('');
+            if (selectedPatient && patients.includes(selectedPatient)) {
+                patientSelect.value = selectedPatient;
+            }
+        }
+
+        const evaluatorSelect = this.analyticsControls.evaluator;
+        if (evaluatorSelect) {
+            const selectedEvaluator = evaluatorSelect.value;
+            const evaluatorsMap = new Map();
+            evaluations.forEach(evaluation => {
+                const name = evaluation.evaluatorInfo?.name?.trim();
+                if (!name) return;
+                const key = name.toLowerCase();
+                if (!evaluatorsMap.has(key)) {
+                    evaluatorsMap.set(key, name);
+                }
+            });
+            const evaluators = Array.from(evaluatorsMap.values()).sort(collator.compare);
+            evaluatorSelect.innerHTML = [
+                '<option value="">Todos os avaliadores</option>',
+                ...evaluators.map(name => `<option value="${name}">${name}</option>`)
+            ].join('');
+            if (selectedEvaluator && evaluators.includes(selectedEvaluator)) {
+                evaluatorSelect.value = selectedEvaluator;
+            }
+        }
+    }
+
+    updateAnalyticsResults(force = false) {
+        if (!this.analyticsControls) {
+            return;
+        }
+
+        const container = this.analyticsControls.resultsContainer;
+        if (!container) {
+            return;
+        }
+
+        const allEvaluations = this.filteredEvaluations || [];
+        if (allEvaluations.length === 0) {
+            container.innerHTML = `
+                <div class="analytics-empty">
+                    <h4>Nenhuma avaliação disponível</h4>
+                    <p>Assim que os formulários forem preenchidos, os resultados analíticos aparecerão aqui.</p>
+                </div>
+            `;
+            this.updateAnalyticsSummary([], []);
+            return;
+        }
+
+        const filtered = this.filterEvaluationsForAnalytics(allEvaluations);
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="analytics-empty">
+                    <h4>Nenhum resultado para os filtros selecionados</h4>
+                    <p>Ajuste os filtros para visualizar os dados consolidados.</p>
+                </div>
+            `;
+            this.updateAnalyticsSummary([], filtered);
+            return;
+        }
+
+        const grouping = this.analyticsControls.grouping?.value || 'patient';
+        const metric = this.analyticsControls.metric?.value || 'averagePercent';
+
+        const rows = this.aggregateAnalyticsData(filtered, grouping);
+        if (rows.length === 0) {
+            container.innerHTML = `
+                <div class="analytics-empty">
+                    <h4>Não foi possível consolidar os dados</h4>
+                    <p>Verifique se as avaliações possuem pontuações registradas.</p>
+                </div>
+            `;
+            this.updateAnalyticsSummary([], filtered);
+            return;
+        }
+
+        const orderedRows = this.sortAnalyticsRows(rows, metric);
+        container.innerHTML = this.renderAnalyticsTable(orderedRows, grouping, metric);
+        this.updateAnalyticsSummary(orderedRows, filtered, metric, grouping);
+    }
+
+    filterEvaluationsForAnalytics(evaluations) {
+        if (!this.analyticsControls) return evaluations;
+
+        const patientFilter = this.analyticsControls.patient?.value?.toLowerCase() || '';
+        const evaluatorFilter = this.analyticsControls.evaluator?.value?.toLowerCase() || '';
+        const dateFromValue = this.analyticsControls.dateFrom?.value || '';
+        const dateToValue = this.analyticsControls.dateTo?.value || '';
+
+        const dateFrom = dateFromValue ? new Date(dateFromValue + 'T00:00:00') : null;
+        const dateTo = dateToValue ? new Date(dateToValue + 'T23:59:59') : null;
+
+        return evaluations.filter(evaluation => {
+            const patientName = evaluation.patientInfo?.name?.toLowerCase() || '';
+            if (patientFilter && patientName !== patientFilter) {
+                return false;
+            }
+
+            const evaluatorName = evaluation.evaluatorInfo?.name?.toLowerCase() || '';
+            if (evaluatorFilter && evaluatorName !== evaluatorFilter) {
+                return false;
+            }
+
+            if (dateFrom || dateTo) {
+                const evalDate = this.parseEvaluationDate(evaluation);
+                if (!evalDate) {
+                    return false;
+                }
+                if (dateFrom && evalDate < dateFrom) {
+                    return false;
+                }
+                if (dateTo && evalDate > dateTo) {
+                    return false;
+                }
+            }
+
+            return true;
+        });
+    }
+
+    aggregateAnalyticsData(evaluations, grouping) {
+        switch (grouping) {
+            case 'patient':
+                return this.aggregateByPatient(evaluations);
+            case 'evaluator':
+                return this.aggregateByEvaluator(evaluations);
+            case 'category':
+                return this.aggregateByCategory(evaluations);
+            case 'subgroup':
+                return this.aggregateBySubgroup(evaluations);
+            case 'month':
+                return this.aggregateByMonth(evaluations);
+            default:
+                return this.aggregateByPatient(evaluations);
+        }
+    }
+
+    aggregateByPatient(evaluations) {
+        const map = new Map();
+
+        evaluations.forEach(evaluation => {
+            const name = evaluation.patientInfo?.name?.trim() || 'Paciente não informado';
+            const key = name.toLowerCase();
+            const metrics = this.extractEvaluationScore(evaluation);
+
+            if (!map.has(key)) {
+                map.set(key, {
+                    id: key,
+                    label: name,
+                    totalScore: 0,
+                    maxScore: 0,
+                    count: 0,
+                    dataPoints: []
+                });
+            }
+
+            const bucket = map.get(key);
+            bucket.totalScore += metrics.totalScore;
+            bucket.maxScore += metrics.maxScore;
+            bucket.count += 1;
+            if (Number.isFinite(metrics.percentage)) {
+                bucket.dataPoints.push({
+                    date: metrics.evaluationDate,
+                    value: metrics.percentage
+                });
+            }
+        });
+
+        return this.finalizeAnalyticsRows(map);
+    }
+
+    aggregateByEvaluator(evaluations) {
+        const map = new Map();
+
+        evaluations.forEach(evaluation => {
+            const name = evaluation.evaluatorInfo?.name?.trim() || 'Avaliador não informado';
+            const key = name.toLowerCase();
+            const metrics = this.extractEvaluationScore(evaluation);
+
+            if (!map.has(key)) {
+                map.set(key, {
+                    id: key,
+                    label: name,
+                    totalScore: 0,
+                    maxScore: 0,
+                    count: 0,
+                    dataPoints: []
+                });
+            }
+
+            const bucket = map.get(key);
+            bucket.totalScore += metrics.totalScore;
+            bucket.maxScore += metrics.maxScore;
+            bucket.count += 1;
+            if (Number.isFinite(metrics.percentage)) {
+                bucket.dataPoints.push({
+                    date: metrics.evaluationDate,
+                    value: metrics.percentage
+                });
+            }
+        });
+
+        return this.finalizeAnalyticsRows(map);
+    }
+
+    aggregateByCategory(evaluations) {
+        const map = new Map();
+
+        evaluations.forEach(evaluation => {
+            const evalKey = this.generateEvaluationKey(evaluation);
+            const evalDate = this.parseEvaluationDate(evaluation);
+            const categories = this.extractCategoryTotals(evaluation);
+
+            Object.entries(categories).forEach(([categoryName, data]) => {
+                const key = categoryName.toLowerCase();
+                if (!map.has(key)) {
+                    map.set(key, {
+                        id: key,
+                        label: categoryName,
+                        totalScore: 0,
+                        maxScore: 0,
+                        dataPoints: [],
+                        uniqueEvaluations: new Set()
+                    });
+                }
+
+                const bucket = map.get(key);
+                bucket.totalScore += data.total;
+                bucket.maxScore += data.max;
+                if (Number.isFinite(data.percentage)) {
+                    bucket.dataPoints.push({
+                        date: evalDate,
+                        value: data.percentage
+                    });
+                }
+                if (evalKey) {
+                    bucket.uniqueEvaluations.add(evalKey);
+                }
+            });
+        });
+
+        return this.finalizeAnalyticsRows(map, { useUniqueEvaluations: true });
+    }
+
+    aggregateBySubgroup(evaluations) {
+        const map = new Map();
+
+        evaluations.forEach(evaluation => {
+            const evalKey = this.generateEvaluationKey(evaluation);
+            const evalDate = this.parseEvaluationDate(evaluation);
+            const subgroups = this.extractSubgroupTotals(evaluation);
+
+            subgroups.forEach(subgroupData => {
+                const key = subgroupData.key;
+                if (!map.has(key)) {
+                    map.set(key, {
+                        id: key,
+                        label: subgroupData.label,
+                        totalScore: 0,
+                        maxScore: 0,
+                        dataPoints: [],
+                        uniqueEvaluations: new Set(),
+                        metadata: {
+                            category: subgroupData.category
+                        }
+                    });
+                }
+
+                const bucket = map.get(key);
+                bucket.totalScore += subgroupData.total;
+                bucket.maxScore += subgroupData.max;
+                if (Number.isFinite(subgroupData.percentage)) {
+                    bucket.dataPoints.push({
+                        date: evalDate,
+                        value: subgroupData.percentage
+                    });
+                }
+                if (evalKey) {
+                    bucket.uniqueEvaluations.add(evalKey);
+                }
+            });
+        });
+
+        return this.finalizeAnalyticsRows(map, { useUniqueEvaluations: true });
+    }
+
+    aggregateByMonth(evaluations) {
+        const map = new Map();
+
+        evaluations.forEach(evaluation => {
+            const evalDate = this.parseEvaluationDate(evaluation);
+            if (!evalDate) return;
+
+            const key = `${evalDate.getFullYear()}-${String(evalDate.getMonth() + 1).padStart(2, '0')}`;
+            if (!map.has(key)) {
+                const label = this.capitalize(evalDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }));
+                map.set(key, {
+                    id: key,
+                    label,
+                    totalScore: 0,
+                    maxScore: 0,
+                    count: 0,
+                    dataPoints: []
+                });
+            }
+
+            const bucket = map.get(key);
+            const metrics = this.extractEvaluationScore(evaluation);
+            bucket.totalScore += metrics.totalScore;
+            bucket.maxScore += metrics.maxScore;
+            bucket.count += 1;
+            if (Number.isFinite(metrics.percentage)) {
+                bucket.dataPoints.push({
+                    date: evalDate,
+                    value: metrics.percentage
+                });
+            }
+        });
+
+        return this.finalizeAnalyticsRows(map);
+    }
+
+    finalizeAnalyticsRows(map, options = {}) {
+        const rows = [];
+        map.forEach(bucket => {
+            const dataPoints = (bucket.dataPoints || []).map(point => ({
+                date: point.date instanceof Date ? point.date : (point.date ? new Date(point.date) : null),
+                value: Number.isFinite(point.value) ? point.value : null
+            })).sort((a, b) => {
+                if (!a.date && !b.date) return 0;
+                if (!a.date) return -1;
+                if (!b.date) return 1;
+                return a.date - b.date;
+            });
+
+            const evaluationCount = options.useUniqueEvaluations && bucket.uniqueEvaluations
+                ? bucket.uniqueEvaluations.size
+                : (bucket.count || dataPoints.length || 0);
+
+            const averagePercent = bucket.maxScore > 0 ? (bucket.totalScore / bucket.maxScore) * 100 : 0;
+            const averageScore = evaluationCount > 0 ? bucket.totalScore / evaluationCount : 0;
+            const firstPoint = dataPoints.find(point => point.value !== null);
+            const lastPoint = [...dataPoints].reverse().find(point => point.value !== null);
+            const firstValue = firstPoint ? firstPoint.value : averagePercent;
+            const lastValue = lastPoint ? lastPoint.value : averagePercent;
+            const trend = dataPoints.filter(point => point.value !== null).length >= 2 ? lastValue - firstValue : 0;
+            const firstDate = firstPoint ? firstPoint.date : (dataPoints.length ? dataPoints[0].date : null);
+            const lastDate = lastPoint ? lastPoint.date : (dataPoints.length ? dataPoints[dataPoints.length - 1].date : null);
+
+            rows.push({
+                id: bucket.id,
+                label: bucket.label,
+                count: evaluationCount,
+                totalScore: bucket.totalScore,
+                maxScore: bucket.maxScore,
+                averagePercent,
+                averageScore,
+                lastScore: lastValue,
+                trend,
+                firstDate,
+                lastDate,
+                metadata: bucket.metadata || {}
+            });
+        });
+        return rows;
+    }
+
+    extractEvaluationScore(evaluation) {
+        const totalScore = typeof evaluation.totalScore === 'number'
+            ? evaluation.totalScore
+            : this.calculateFallbackTotalScore(evaluation);
+        const maxScore = this.calculateMaxScore(evaluation);
+        const percentage = maxScore > 0 ? (totalScore / maxScore) * 100 : 0;
+        const evaluationDate = this.parseEvaluationDate(evaluation);
+
+        return { totalScore, maxScore, percentage, evaluationDate };
+    }
+
+    calculateFallbackTotalScore(evaluation) {
+        if (evaluation.groupScores) {
+            return Object.values(evaluation.groupScores).reduce((sum, group) => sum + (group.total || 0), 0);
+        }
+
+        if (evaluation.responses) {
+            return Object.values(evaluation.responses).reduce((sum, response) => {
+                if (typeof response === 'number') {
+                    return sum + response;
+                }
+                if (response && typeof response.score === 'number') {
+                    return sum + response.score;
+                }
+                return sum;
+            }, 0);
+        }
+
+        return 0;
+    }
+
+    calculateMaxScore(evaluation) {
+        if (evaluation.groupScores) {
+            const totalMax = Object.values(evaluation.groupScores).reduce((sum, group) => sum + (group.max || 0), 0);
+            if (totalMax > 0) {
+                return totalMax;
+            }
+        }
+
+        if (evaluation.responses) {
+            const questions = Object.keys(evaluation.responses).length;
+            if (questions > 0) {
+                return questions * 5;
+            }
+        }
+
+        // Fallback para o total completo do formulário (149 perguntas * 5)
+        return 149 * 5;
+    }
+
+    extractCategoryTotals(evaluation) {
+        const totals = {};
+
+        if (!evaluation.groupScores) {
+            return totals;
+        }
+
+        Object.entries(evaluation.groupScores).forEach(([groupName, groupData]) => {
+            const category = groupData.category || 'Categoria não informada';
+            if (!totals[category]) {
+                totals[category] = {
+                    total: 0,
+                    max: 0,
+                    percentage: 0
+                };
+            }
+
+            totals[category].total += groupData.total || 0;
+            totals[category].max += groupData.max || 0;
+        });
+
+        Object.values(totals).forEach(data => {
+            data.percentage = data.max > 0 ? (data.total / data.max) * 100 : 0;
+        });
+
+        return totals;
+    }
+
+    extractSubgroupTotals(evaluation) {
+        const totals = [];
+
+        if (!evaluation.groupScores) {
+            return totals;
+        }
+
+        Object.entries(evaluation.groupScores).forEach(([groupName, groupData]) => {
+            const key = groupName.toLowerCase();
+            const total = groupData.total || 0;
+            const max = groupData.max || 0;
+            const percentage = max > 0 ? (total / max) * 100 : 0;
+
+            totals.push({
+                key,
+                label: `${groupName}${groupData.category ? ` · ${groupData.category}` : ''}`,
+                category: groupData.category || null,
+                total,
+                max,
+                percentage
+            });
+        });
+
+        return totals;
+    }
+
+    sortAnalyticsRows(rows, metric) {
+        const metricKey = metric || 'averagePercent';
+
+        const getValue = (row) => {
+            switch (metricKey) {
+                case 'averageScore':
+                    return Number.isFinite(row.averageScore) ? row.averageScore : 0;
+                case 'count':
+                    return Number.isFinite(row.count) ? row.count : 0;
+                case 'lastScore':
+                    return Number.isFinite(row.lastScore) ? row.lastScore : 0;
+                case 'averagePercent':
+                default:
+                    return Number.isFinite(row.averagePercent) ? row.averagePercent : 0;
+            }
+        };
+
+        return [...rows].sort((a, b) => getValue(b) - getValue(a));
+    }
+
+    renderAnalyticsTable(rows, grouping, metric) {
+        if (!rows.length) {
+            return `
+                <div class="analytics-empty">
+                    <h4>Dados não disponíveis</h4>
+                    <p>Experimente ajustar os filtros para visualizar outros resultados.</p>
+                </div>
+            `;
+        }
+
+        const header = `
+            <thead>
+                <tr>
+                    <th>${grouping === 'month' ? 'Período' : 'Segmento'}</th>
+                    <th>Avaliações</th>
+                    <th>Pontuação média (%)</th>
+                    <th>Pontuação média (total)</th>
+                    <th>Última avaliação</th>
+                    <th>Última pontuação</th>
+                    <th>Tendência</th>
+                </tr>
+            </thead>
+        `;
+
+        const bodyRows = rows.map(row => `
+            <tr>
+                <td>${row.label}</td>
+                <td>${row.count}</td>
+                <td>${this.formatPercentage(row.averagePercent)}</td>
+                <td>${this.formatScore(row.averageScore)}</td>
+                <td>${this.formatDate(row.lastDate)}</td>
+                <td>${this.formatPercentage(row.lastScore)}</td>
+                <td>${this.createTrendPill(row.trend)}</td>
+            </tr>
+        `).join('');
+
+        return `
+            <div class="analytics-table-wrapper">
+                <table>
+                    ${header}
+                    <tbody>
+                        ${bodyRows}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
+    createTrendPill(value) {
+        if (!Number.isFinite(value) || value === 0) {
+            return `<span class="metric-pill">Estável</span>`;
+        }
+
+        const rounded = value.toFixed(1);
+        if (value > 0) {
+            return `<span class="metric-pill positive">▲ +${rounded} pts</span>`;
+        }
+        return `<span class="metric-pill negative">▼ ${rounded} pts</span>`;
+    }
+
+    formatPercentage(value) {
+        if (!Number.isFinite(value)) return '0%';
+        return `${value.toFixed(1)}%`;
+    }
+
+    formatScore(value) {
+        if (!Number.isFinite(value)) return '0';
+        return value.toFixed(1);
+    }
+
+    formatDate(date) {
+        if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+            return 'N/A';
+        }
+        return date.toLocaleDateString('pt-BR');
+    }
+
+    updateAnalyticsSummary(rows, filteredEvaluations, metric = 'averagePercent', grouping = 'patient') {
+        if (!this.analyticsControls) return;
+
+        const summary = this.analyticsControls.summary || {};
+        const totals = this.calculateGlobalAnalyticsTotals(filteredEvaluations || []);
+
+        if (summary.total) {
+            summary.total.textContent = totals.totalEvaluations;
+        }
+
+        if (summary.averagePercent) {
+            summary.averagePercent.textContent = this.formatPercentage(totals.averagePercent || 0);
+        }
+
+        if (summary.bestGroup) {
+            if (!rows.length) {
+                summary.bestGroup.textContent = '-';
+            } else {
+                const topRow = this.sortAnalyticsRows(rows, metric)[0];
+                const metricValue = (() => {
+                    switch (metric) {
+                        case 'averageScore':
+                            return `${this.formatScore(topRow.averageScore)}`;
+                        case 'count':
+                            return `${topRow.count}`;
+                        case 'lastScore':
+                            return this.formatPercentage(topRow.lastScore);
+                        case 'averagePercent':
+                        default:
+                            return this.formatPercentage(topRow.averagePercent);
+                    }
+                })();
+                summary.bestGroup.textContent = `${topRow.label} • ${metricValue}`;
+            }
+        }
+    }
+
+    calculateGlobalAnalyticsTotals(evaluations) {
+        if (!evaluations.length) {
+            return { totalEvaluations: 0, averagePercent: 0 };
+        }
+
+        let totalScore = 0;
+        let maxScore = 0;
+
+        evaluations.forEach(evaluation => {
+            const metrics = this.extractEvaluationScore(evaluation);
+            totalScore += metrics.totalScore;
+            maxScore += metrics.maxScore;
+        });
+
+        return {
+            totalEvaluations: evaluations.length,
+            averagePercent: maxScore > 0 ? (totalScore / maxScore) * 100 : 0
+        };
+    }
+
+    parseEvaluationDate(evaluation) {
+        const dateStr = evaluation.patientInfo?.evaluationDate || evaluation.createdAt;
+        if (!dateStr) return null;
+        const date = new Date(dateStr);
+        return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    generateEvaluationKey(evaluation) {
+        const patient = evaluation.patientInfo?.name || 'unknown';
+        const date = evaluation.patientInfo?.evaluationDate || evaluation.createdAt || '';
+        return `${patient}__${date}`;
+    }
+
+    capitalize(text) {
+        if (!text || typeof text !== 'string') return text;
+        return text.charAt(0).toUpperCase() + text.slice(1);
     }
 
     groupEvaluationsByPatient(evaluations) {
