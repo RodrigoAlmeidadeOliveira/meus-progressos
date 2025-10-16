@@ -672,6 +672,7 @@ class TerapeutaPanelMelhorado {
         this.autoRefreshInterval = null;
         this.lastReportDataUpdate = null;
         this.analyticsControls = null;
+        this.runDeduplication = this.runDeduplication.bind(this);
         
         this.init();
     }
