@@ -19,6 +19,8 @@ Plataforma completa para acompanhar o desenvolvimento e evolução das habilidad
 5. Selecione "Deploy from a branch" > "main"
 6. Seu link será: `https://seuusuario.github.io/nome-do-repositorio`
 
+> 📌 **Automação de deploy:** este repositório possui um workflow (`.github/workflows/deploy.yml`) que envia automaticamente todos os arquivos estáticos para o GitHub Pages a cada `git push` na branch `main`. Basta manter o GitHub Pages configurado para usar o fluxo “GitHub Actions” e aguardar a execução da pipeline após cada commit.
+
 ### **2. Netlify (GRATUITO)**
 
 **Vantagens:** Deploy automático, domínio personalizado, muito fácil
