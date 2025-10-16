@@ -2283,13 +2283,21 @@ class TerapeutaPanelMelhorado {
         document.querySelectorAll('.nav-button').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[data-view="${view}"]`).classList.add('active');
+        const targetNavButton = document.querySelector(`[data-view="${view}"]`);
+        if (targetNavButton) {
+            targetNavButton.classList.add('active');
+        }
         
         // Mostrar conteúdo apropriado
         document.querySelectorAll('.view-content').forEach(content => {
-            content.style.display = 'none';
+            if (content) {
+                content.style.display = 'none';
+            }
         });
-        document.getElementById(`${view}-view`).style.display = 'block';
+        const targetView = document.getElementById(`${view}-view`);
+        if (targetView) {
+            targetView.style.display = 'block';
+        }
         
         // Carregar dados específicos da view se necessário
         switch(view) {
