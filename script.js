@@ -29,27 +29,37 @@ class FirebaseManager {
         }
 
         try {
-            const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const { doc, setDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
             
-            // Criar documento com ID baseado na data e nome do paciente
+            const evaluationId = this.generateEvaluationId(data.patientInfo.name, data.patientInfo.evaluationDate);
+            const docRef = doc(this.db, 'evaluations', evaluationId);
+            const nowIso = new Date().toISOString();
+            
+            let createdAt = nowIso;
+            const existing = await getDoc(docRef);
+            if (existing.exists()) {
+                createdAt = existing.data()?.createdAt || createdAt;
+            }
+            
             const docData = {
                 ...data,
-                createdAt: new Date().toISOString(),
+                createdAt,
+                updatedAt: nowIso,
                 patientId: this.generatePatientId(data.patientInfo.name),
-                evaluationId: `${data.patientInfo.name.replace(/\s+/g, '_')}_${data.patientInfo.evaluationDate}`
+                evaluationId
             };
 
-            const docRef = await addDoc(collection(this.db, 'evaluations'), docData);
-            console.log('Avaliação salva no Firebase:', docRef.id);
+            await setDoc(docRef, docData, { merge: true });
+            console.log('Avaliação salva/atualizada no Firebase:', evaluationId);
             
             // Também salvar localmente como backup
-            this.saveToLocalStorage(data);
+            this.saveToLocalStorage({ ...data, evaluationId });
             
-            return { success: true, id: docRef.id };
+            return { success: true, id: evaluationId };
         } catch (error) {
             console.error('Erro ao salvar no Firebase:', error);
             // Fallback para localStorage
-            return this.saveToLocalStorage(data);
+            return this.saveToLocalStorage({ ...data, evaluationId: this.generateEvaluationId(data.patientInfo.name, data.patientInfo.evaluationDate) });
         }
     }
 
@@ -72,11 +82,14 @@ class FirebaseManager {
             const querySnapshot = await getDocs(q);
             const evaluations = {};
             
-            querySnapshot.forEach((doc) => {
-                const data = doc.data();
-                evaluations[data.patientInfo.evaluationDate] = {
+            querySnapshot.forEach((docSnapshot) => {
+                const data = docSnapshot.data();
+                const evaluationId = data.evaluationId || this.generateEvaluationId(data.patientInfo?.name || docSnapshot.id, data.patientInfo?.evaluationDate || docSnapshot.id);
+                const evaluationDate = data.patientInfo?.evaluationDate || docSnapshot.id;
+                evaluations[evaluationDate] = {
                     ...data,
-                    firebaseId: doc.id
+                    firebaseId: docSnapshot.id,
+                    evaluationId
                 };
             });
             
@@ -87,11 +100,13 @@ class FirebaseManager {
         }
     }
 
-    async deleteEvaluation(date, firebaseId = null) {
-        if (this.initialized && firebaseId) {
+    async deleteEvaluation(evaluationId, firebaseId = null) {
+        const targetDocId = firebaseId || evaluationId;
+
+        if (this.initialized && targetDocId) {
             try {
                 const { deleteDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-                await deleteDoc(doc(this.db, 'evaluations', firebaseId));
+                await deleteDoc(doc(this.db, 'evaluations', targetDocId));
                 console.log('Avaliação deletada do Firebase');
             } catch (error) {
                 console.error('Erro ao deletar do Firebase:', error);
@@ -100,7 +115,15 @@ class FirebaseManager {
         
         // Também deletar do localStorage
         const savedData = this.getFromLocalStorage();
-        delete savedData[date];
+        if (savedData[evaluationId]) {
+            delete savedData[evaluationId];
+        } else {
+            Object.entries(savedData).forEach(([key, value]) => {
+                if (value?.evaluationId === evaluationId) {
+                    delete savedData[key];
+                }
+            });
+        }
         localStorage.setItem('questionnaireData', JSON.stringify(savedData));
     }
 
@@ -108,16 +131,40 @@ class FirebaseManager {
         return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
     }
 
+    generateEvaluationId(name, evaluationDate) {
+        const safeName = (name || 'avaliacao').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        return `${safeName}_${evaluationDate || 'sem-data'}`;
+    }
+
     saveToLocalStorage(data) {
         const savedData = this.getFromLocalStorage();
-        savedData[data.patientInfo.evaluationDate] = data;
+        const evaluationId = data.evaluationId || this.generateEvaluationId(data.patientInfo?.name, data.patientInfo?.evaluationDate);
+        const evaluationDate = data.patientInfo?.evaluationDate || evaluationId;
+        savedData[evaluationDate] = {
+            ...data,
+            evaluationId
+        };
         localStorage.setItem('questionnaireData', JSON.stringify(savedData));
         return { success: true, local: true };
     }
 
     getFromLocalStorage() {
         const saved = localStorage.getItem('questionnaireData');
-        return saved ? JSON.parse(saved) : {};
+        if (!saved) return {};
+
+        try {
+            const parsed = JSON.parse(saved);
+            Object.entries(parsed).forEach(([key, value]) => {
+                if (!value || typeof value !== 'object') return;
+                if (!value.evaluationId) {
+                    value.evaluationId = this.generateEvaluationId(value.patientInfo?.name, value.patientInfo?.evaluationDate || key);
+                }
+            });
+            return parsed;
+        } catch (error) {
+            console.error('Erro ao ler dados locais:', error);
+            return {};
+        }
     }
 }
 
@@ -654,7 +701,19 @@ class QuestionnaireManager {
     }
 
     async getSavedData() {
-        return await this.firebaseManager.getEvaluations();
+        const rawData = await this.firebaseManager.getEvaluations();
+        if (!rawData || typeof rawData !== 'object') {
+            return {};
+        }
+
+        const mapped = {};
+        Object.entries(rawData).forEach(([key, value]) => {
+            if (!value || typeof value !== 'object') return;
+            const evaluationDate = value.patientInfo?.evaluationDate || key;
+            mapped[evaluationDate] = value;
+        });
+
+        return mapped;
     }
 
     setupTabNavigation() {
@@ -1219,8 +1278,9 @@ class QuestionnaireManager {
                 const savedData = await this.getSavedData();
                 const evaluationData = savedData[date];
                 const firebaseId = evaluationData?.firebaseId;
+                const evaluationId = evaluationData?.evaluationId || date;
                 
-                await this.firebaseManager.deleteEvaluation(date, firebaseId);
+                await this.firebaseManager.deleteEvaluation(evaluationId, firebaseId);
                 
                 await this.updateViewResultsButton();
                 

@@ -108,19 +108,30 @@ class FirebaseManagerMelhorado {
         if (this.initialized && this.connectionStatus === 'connected') {
             try {
                 console.log('☁️ Tentando salvar no Firebase...');
-                const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const { doc, setDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                
+                const evaluationId = this.generateEvaluationId(data.patientInfo.name, data.patientInfo.evaluationDate);
+                const docRef = doc(this.db, 'evaluations', evaluationId);
+                const nowIso = new Date().toISOString();
+                
+                let createdAt = nowIso;
+                const existing = await getDoc(docRef);
+                if (existing.exists()) {
+                    createdAt = existing.data()?.createdAt || createdAt;
+                }
                 
                 const docData = {
                     ...data,
-                    createdAt: new Date().toISOString(),
+                    createdAt,
+                    updatedAt: nowIso,
                     patientId: this.generatePatientId(data.patientInfo.name),
-                    evaluationId: `${data.patientInfo.name.replace(/\s+/g, '_')}_${data.patientInfo.evaluationDate}_${Date.now()}`
+                    evaluationId
                 };
                 
-                const docRef = await addDoc(collection(this.db, 'evaluations'), docData);
+                await setDoc(docRef, docData, { merge: true });
                 saveResult.firebase = true;
-                saveResult.firebaseId = docRef.id;
-                console.log('✅ Salvo no Firebase com ID:', docRef.id);
+                saveResult.firebaseId = evaluationId;
+                console.log('✅ Salvo/atualizado no Firebase com ID:', evaluationId);
                 
             } catch (error) {
                 console.error('❌ Erro ao salvar no Firebase:', error);
@@ -138,13 +149,16 @@ class FirebaseManagerMelhorado {
     }
 
     saveToLocalStorage(data) {
-        const key = `evaluation_${data.patientInfo.evaluationDate}_${Date.now()}`;
         const existingData = this.getFromLocalStorage();
-        existingData[key] = data;
+        const evaluationId = data.evaluationId || this.generateEvaluationId(data.patientInfo?.name, data.patientInfo?.evaluationDate);
+        existingData[evaluationId] = {
+            ...data,
+            evaluationId
+        };
         localStorage.setItem('questionnaireData', JSON.stringify(existingData));
         
         // Também salvar em uma chave de backup
-        localStorage.setItem(`backup_${key}`, JSON.stringify(data));
+        localStorage.setItem(`backup_${evaluationId}`, JSON.stringify(data));
     }
 
     saveToSessionStorage(data) {
@@ -159,11 +173,30 @@ class FirebaseManagerMelhorado {
 
     getFromLocalStorage() {
         const saved = localStorage.getItem('questionnaireData');
-        return saved ? JSON.parse(saved) : {};
+        if (!saved) return {};
+
+        try {
+            const parsed = JSON.parse(saved);
+            Object.entries(parsed).forEach(([key, value]) => {
+                if (!value || typeof value !== 'object') return;
+                if (!value.evaluationId) {
+                    value.evaluationId = this.generateEvaluationId(value.patientInfo?.name, value.patientInfo?.evaluationDate || key);
+                }
+            });
+            return parsed;
+        } catch (error) {
+            console.error('❌ Erro ao carregar dados locais:', error);
+            return {};
+        }
     }
 
     generatePatientId(name) {
         return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+    }
+
+    generateEvaluationId(name, evaluationDate) {
+        const safeName = (name || 'avaliacao').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        return `${safeName}_${evaluationDate || 'sem-data'}`;
     }
 
     async saveDraft(data) {

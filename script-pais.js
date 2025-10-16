@@ -35,31 +35,41 @@ class FirebaseManager {
 
         try {
             console.log('🔥 Importando módulos Firestore...');
-            const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+            const { doc, setDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
             
             console.log('🔥 Preparando dados para salvar...');
-            // Criar documento com ID baseado na data e nome do paciente
+            const evaluationId = this.generateEvaluationId(data.patientInfo.name, data.patientInfo.evaluationDate);
+            const docRef = doc(this.db, 'evaluations', evaluationId);
+            const nowIso = new Date().toISOString();
+            
+            let createdAt = nowIso;
+            const existing = await getDoc(docRef);
+            if (existing.exists()) {
+                createdAt = existing.data()?.createdAt || createdAt;
+            }
+            
             const docData = {
                 ...data,
-                createdAt: new Date().toISOString(),
+                createdAt,
+                updatedAt: nowIso,
                 patientId: this.generatePatientId(data.patientInfo.name),
-                evaluationId: `${data.patientInfo.name.replace(/\s+/g, '_')}_${data.patientInfo.evaluationDate}`
+                evaluationId
             };
 
-            console.log('🔥 Salvando no Firebase...', docData);
-            const docRef = await addDoc(collection(this.db, 'evaluations'), docData);
-            console.log('✅ Avaliação salva no Firebase com sucesso:', docRef.id);
+            console.log('🔥 Salvando/atualizando no Firebase...', docData);
+            await setDoc(docRef, docData, { merge: true });
+            console.log('✅ Avaliação gravada no Firebase com ID estável:', evaluationId);
             
             // Também salvar localmente como backup
-            this.saveToLocalStorage(data);
+            this.saveToLocalStorage({ ...data, evaluationId });
             
-            return { success: true, id: docRef.id, firebase: true };
+            return { success: true, id: evaluationId, firebase: true };
         } catch (error) {
             console.error('❌ Erro ao salvar no Firebase:', error);
             console.error('❌ Detalhes do erro:', error.message, error.code);
             
             // Fallback para localStorage
-            const localResult = this.saveToLocalStorage(data);
+            const localResult = this.saveToLocalStorage({ ...data, evaluationId: this.generateEvaluationId(data.patientInfo.name, data.patientInfo.evaluationDate) });
             return { ...localResult, firebaseError: error.message };
         }
     }
@@ -68,16 +78,40 @@ class FirebaseManager {
         return name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
     }
 
+    generateEvaluationId(name, evaluationDate) {
+        const safeName = (name || 'avaliacao').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+        return `${safeName}_${evaluationDate || 'sem-data'}`;
+    }
+
     saveToLocalStorage(data) {
         const savedData = this.getFromLocalStorage();
-        savedData[data.patientInfo.evaluationDate] = data;
+        const evaluationId = data.evaluationId || this.generateEvaluationId(data.patientInfo?.name, data.patientInfo?.evaluationDate);
+        const evaluationDate = data.patientInfo?.evaluationDate || evaluationId;
+        savedData[evaluationDate] = {
+            ...data,
+            evaluationId
+        };
         localStorage.setItem('questionnaireData', JSON.stringify(savedData));
         return { success: true, local: true };
     }
 
     getFromLocalStorage() {
         const saved = localStorage.getItem('questionnaireData');
-        return saved ? JSON.parse(saved) : {};
+        if (!saved) return {};
+
+        try {
+            const parsed = JSON.parse(saved);
+            Object.entries(parsed).forEach(([key, value]) => {
+                if (!value || typeof value !== 'object') return;
+                if (!value.evaluationId) {
+                    value.evaluationId = this.generateEvaluationId(value.patientInfo?.name, value.patientInfo?.evaluationDate || key);
+                }
+            });
+            return parsed;
+        } catch (error) {
+            console.error('❌ Erro ao processar dados locais:', error);
+            return {};
+        }
     }
 }
 

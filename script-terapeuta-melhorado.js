@@ -203,17 +203,27 @@ class FirebaseManagerTerapeutaMelhorado {
             }
             
             try {
-                const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const { doc, setDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
                 
                 // MELHORIA: Limpar dados antes do envio
                 const cleanedData = this.cleanDataForSync(localItem);
+                const evaluationId = cleanedData.evaluationId || this.generateEvaluationIdFromData(cleanedData);
+                const docRef = doc(this.db, 'evaluations', evaluationId);
+                const existing = await getDoc(docRef);
+                const createdAt = existing.exists() ? (existing.data()?.createdAt || cleanedData.createdAt || new Date().toISOString()) : (cleanedData.createdAt || new Date().toISOString());
+                const payload = {
+                    ...cleanedData,
+                    createdAt,
+                    updatedAt: new Date().toISOString(),
+                    evaluationId
+                };
                 
-                const docRef = await addDoc(collection(this.db, 'evaluations'), cleanedData);
-                console.log(`✅ Sincronizado: ${localItem.patientInfo?.name} - ID: ${docRef.id}`);
+                await setDoc(docRef, payload, { merge: true });
+                console.log(`✅ Sincronizado: ${localItem.patientInfo?.name} - ID: ${evaluationId}`);
                 synced++;
                 
                 // MELHORIA: Marcar como sincronizado no localStorage
-                this.markAsSynced(localItem, docRef.id);
+                this.markAsSynced(localItem, evaluationId);
                 
             } catch (error) {
                 console.error('❌ Erro ao sincronizar:', error);
@@ -313,6 +323,97 @@ class FirebaseManagerTerapeutaMelhorado {
         return `${name}_${date}_${responses.slice(0, 50)}`;
     }
 
+    generateEvaluationIdFromData(item) {
+        const name = (item.patientInfo?.name || 'avaliacao')
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_]/g, '');
+        const evaluationDate = item.patientInfo?.evaluationDate ||
+            item.evaluationDate ||
+            (item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : null) ||
+            new Date().toISOString().split('T')[0];
+        return `${name}_${evaluationDate}`;
+    }
+
+    generatePatientId(name) {
+        return (name || 'avaliacao')
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_]/g, '');
+    }
+
+    async deduplicateEvaluations() {
+        if (!this.initialized || this.connectionStatus !== 'connected') {
+            throw new Error('Firebase offline');
+        }
+
+        console.log('🧹 Iniciando deduplicação de avaliações no Firebase...');
+
+        const { getDocs, collection, writeBatch, doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const snapshot = await getDocs(collection(this.db, 'evaluations'));
+
+        const groups = new Map();
+        snapshot.forEach((docSnap) => {
+            const data = docSnap.data() || {};
+            const evaluationId = data.evaluationId || this.generateEvaluationIdFromData(data);
+            if (!groups.has(evaluationId)) {
+                groups.set(evaluationId, []);
+            }
+            groups.get(evaluationId).push({
+                docId: docSnap.id,
+                data
+            });
+        });
+
+        const batch = writeBatch(this.db);
+        let rewritten = 0;
+        let deleted = 0;
+
+        for (const [evaluationId, documents] of groups.entries()) {
+            if (!documents || documents.length === 0) continue;
+
+            // Ordenar mantendo o registro mais recente por updatedAt ou createdAt
+            const sorted = documents.sort((a, b) => {
+                const dateA = new Date(a.data.updatedAt || a.data.createdAt || 0).getTime();
+                const dateB = new Date(b.data.updatedAt || b.data.createdAt || 0).getTime();
+                return dateB - dateA;
+            });
+
+            const primary = sorted[0];
+            const nowIso = new Date().toISOString();
+            const payload = {
+                ...primary.data,
+                evaluationId,
+                patientId: primary.data.patientId || this.generatePatientId(primary.data.patientInfo?.name),
+                createdAt: primary.data.createdAt || nowIso,
+                updatedAt: nowIso,
+                deduplicatedAt: nowIso
+            };
+
+            await setDoc(doc(this.db, 'evaluations', evaluationId), payload, { merge: true });
+            rewritten++;
+
+            sorted.forEach(entry => {
+                if (entry.docId !== evaluationId) {
+                    batch.delete(doc(this.db, 'evaluations', entry.docId));
+                    deleted++;
+                }
+            });
+        }
+
+        if (deleted > 0) {
+            await batch.commit();
+        }
+
+        console.log(`🧹 Deduplicação concluída: ${rewritten} registros consolidados, ${deleted} duplicatas removidas.`);
+        return {
+            consolidated: rewritten,
+            removed: deleted,
+            totalDocuments: snapshot.size,
+            uniqueEvaluations: groups.size
+        };
+    }
+
     async getFirebaseData() {
         try {
             const { getDocs, collection, orderBy, query } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
@@ -322,9 +423,12 @@ class FirebaseManagerTerapeutaMelhorado {
             
             const cloudData = [];
             querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const evaluationId = data.evaluationId || this.generateEvaluationIdFromData(data);
                 cloudData.push({
                     id: doc.id,
-                    ...doc.data()
+                    ...data,
+                    evaluationId
                 });
             });
             
@@ -337,6 +441,17 @@ class FirebaseManagerTerapeutaMelhorado {
 
     async checkIfExistsInFirebase(localItem, cloudData) {
         // Verificação robusta de existência
+        const evaluationId = localItem.evaluationId || this.generateEvaluationIdFromData(localItem);
+        if (evaluationId) {
+            const existsById = cloudData.some(cloudItem => {
+                const cloudEvalId = cloudItem.evaluationId || this.generateEvaluationIdFromData(cloudItem);
+                return cloudEvalId === evaluationId;
+            });
+            if (existsById) {
+                return true;
+            }
+        }
+
         const itemKey = this.generateItemKey(localItem);
         
         return cloudData.some(cloudItem => {
@@ -347,6 +462,7 @@ class FirebaseManagerTerapeutaMelhorado {
 
     cleanDataForSync(localItem) {
         // Limpar dados antes de enviar para Firebase
+        const evaluationId = localItem.evaluationId || this.generateEvaluationIdFromData(localItem);
         const cleaned = {
             patientInfo: localItem.patientInfo,
             evaluatorInfo: localItem.evaluatorInfo,
@@ -355,7 +471,8 @@ class FirebaseManagerTerapeutaMelhorado {
             totalScore: localItem.totalScore,
             createdAt: localItem.createdAt || new Date().toISOString(),
             syncedAt: new Date().toISOString(),
-            syncedFrom: 'terapeuta-local-improved'
+            syncedFrom: 'terapeuta-local-improved',
+            evaluationId
         };
         
         // Remover propriedades desnecessárias
@@ -398,7 +515,7 @@ class FirebaseManagerTerapeutaMelhorado {
         
         for (const localItem of localData) {
             try {
-                const { addDoc, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+                const { doc, setDoc, getDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
                 
                 const cleanedData = {
                     ...this.cleanDataForSync(localItem),
@@ -406,11 +523,21 @@ class FirebaseManagerTerapeutaMelhorado {
                     forceSyncAt: new Date().toISOString()
                 };
                 
-                const docRef = await addDoc(collection(this.db, 'evaluations'), cleanedData);
-                console.log(`🚀 FORÇADO: ${localItem.patientInfo?.name} - ID: ${docRef.id}`);
+                const evaluationId = cleanedData.evaluationId || this.generateEvaluationIdFromData(cleanedData);
+                const docRef = doc(this.db, 'evaluations', evaluationId);
+                const existing = await getDoc(docRef);
+                const createdAt = existing.exists() ? (existing.data()?.createdAt || cleanedData.createdAt || new Date().toISOString()) : (cleanedData.createdAt || new Date().toISOString());
+                
+                await setDoc(docRef, {
+                    ...cleanedData,
+                    createdAt,
+                    updatedAt: new Date().toISOString(),
+                    evaluationId
+                }, { merge: true });
+                console.log(`🚀 FORÇADO: ${localItem.patientInfo?.name} - ID: ${evaluationId}`);
                 synced++;
                 
-                this.markAsSynced(localItem, docRef.id);
+                this.markAsSynced(localItem, evaluationId);
                 
             } catch (error) {
                 console.error('❌ Erro na sincronização forçada:', error);
@@ -419,6 +546,30 @@ class FirebaseManagerTerapeutaMelhorado {
         }
         
         return { synced, errors, total: localData.length };
+    }
+
+    async runDeduplication() {
+        if (this.firebaseManager.connectionStatus !== 'connected') {
+            this.showNotification('Conecte-se ao Firebase para corrigir duplicadas.', 'warning');
+            return;
+        }
+
+        this.showLoading(true);
+        this.showNotification('Iniciando correção de duplicatas...', 'info');
+
+        try {
+            const result = await this.firebaseManager.deduplicateEvaluations();
+            this.showNotification(
+                `Correção concluída: ${result.removed} duplicata(s) removida(s).`,
+                result.removed > 0 ? 'success' : 'info'
+            );
+            await this.refreshData(true);
+        } catch (error) {
+            console.error('❌ Erro ao remover duplicadas:', error);
+            this.showNotification('Erro ao remover duplicadas: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
     }
 
     removeFromLocalStorage(evaluationId) {
@@ -610,6 +761,13 @@ class TerapeutaPanelMelhorado {
         if (exportButton) {
             exportButton.addEventListener('click', () => {
                 this.exportData();
+            });
+        }
+
+        const deduplicateButton = document.getElementById('deduplicate-data');
+        if (deduplicateButton) {
+            deduplicateButton.addEventListener('click', () => {
+                this.runDeduplication();
             });
         }
     }
