@@ -196,7 +196,12 @@ class FirebaseManagerMelhorado {
 
     generateEvaluationId(name, evaluationDate) {
         const safeName = (name || 'avaliacao').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-        return `${safeName}_${evaluationDate || 'sem-data'}`;
+
+        // Adicionar timestamp para evitar colisões quando houver múltiplas avaliações no mesmo dia
+        const timestamp = new Date().toISOString();
+        const timestampHash = timestamp.replace(/[^0-9]/g, '').slice(0, 10); // Usar apenas números do timestamp
+
+        return `${safeName}_${evaluationDate || 'sem-data'}_${timestampHash}`;
     }
 
     async saveDraft(data) {

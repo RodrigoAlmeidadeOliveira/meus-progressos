@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Firebase - FormAval</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #00ff00;
+        }
+        .log {
+            background: #000;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+            border: 1px solid #00ff00;
+        }
+        .error { color: #ff0000; }
+        .success { color: #00ff00; }
+        .info { color: #00ffff; }
+        .warning { color: #ffff00; }
+        button {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #00cc00;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Firebase - FormAval</h1>
+    <div id="logs" class="log"></div>
+
+    <button onclick="testFirebaseConnection()">🔄 Testar Conexão Firebase</button>
+    <button onclick="loadAllEvaluations()">📊 Carregar Avaliações</button>
+    <button onclick="clearLogs()">🗑️ Limpar Logs</button>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getDocs, collection, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_fkKU3N61u3HxKklIbdAMK2qUAPDVHhQ",
+            authDomain: "avaliacao-habilidades-2024.firebaseapp.com",
+            projectId: "avaliacao-habilidades-2024",
+            storageBucket: "avaliacao-habilidades-2024.firebasestorage.app",
+            messagingSenderId: "1026943873619",
+            appId: "1:1026943873619:web:50276ae57af2e3a9ea0ca6",
+            measurementId: "G-3LNVBBET4E"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebaseDebug = { app, db, auth, getDocs, collection, query, orderBy };
+
+        async function init() {
+            log('🔄 Inicializando Firebase...', 'info');
+            try {
+                await signInAnonymously(auth);
+                log('✅ Autenticação anônima bem-sucedida', 'success');
+                window.firebaseDebug.initialized = true;
+            } catch (error) {
+                log('❌ Erro na autenticação: ' + error.message, 'error');
+                console.error(error);
+            }
+        }
+
+        init();
+    </script>
+
+    <script>
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type;
+            logsDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+
+        async function testFirebaseConnection() {
+            log('🔍 Testando conexão com Firebase...', 'info');
+
+            if (!window.firebaseDebug) {
+                log('❌ Firebase não foi inicializado', 'error');
+                return;
+            }
+
+            if (!window.firebaseDebug.initialized) {
+                log('⏳ Aguardando autenticação...', 'warning');
+                setTimeout(testFirebaseConnection, 1000);
+                return;
+            }
+
+            try {
+                const { db, getDocs, collection } = window.firebaseDebug;
+                log('📡 Tentando conectar à coleção "evaluations"...', 'info');
+
+                const snapshot = await getDocs(collection(db, 'evaluations'));
+                log(`✅ Conexão bem-sucedida! Encontrados ${snapshot.size} documentos`, 'success');
+
+                snapshot.forEach((doc, index) => {
+                    const data = doc.data();
+                    log(`📄 Doc ${index + 1}: ${doc.id} - Paciente: ${data.patientInfo?.name || 'N/A'}`, 'info');
+                });
+
+            } catch (error) {
+                log(`❌ Erro ao conectar: ${error.message}`, 'error');
+                log(`❌ Código do erro: ${error.code}`, 'error');
+                console.error('Erro completo:', error);
+            }
+        }
+
+        async function loadAllEvaluations() {
+            log('📊 Carregando todas as avaliações...', 'info');
+
+            if (!window.firebaseDebug || !window.firebaseDebug.initialized) {
+                log('❌ Firebase não está pronto', 'error');
+                return;
+            }
+
+            try {
+                const { db, getDocs, collection, query, orderBy } = window.firebaseDebug;
+
+                log('🔍 Criando query ordenada por createdAt...', 'info');
+                const q = query(collection(db, 'evaluations'), orderBy('createdAt', 'desc'));
+
+                log('📡 Executando query...', 'info');
+                const querySnapshot = await getDocs(q);
+
+                log(`✅ Query executada! ${querySnapshot.size} avaliações encontradas`, 'success');
+
+                const evaluations = [];
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    evaluations.push({
+                        id: doc.id,
+                        ...data
+                    });
+
+                    const patientName = data.patientInfo?.name || 'Desconhecido';
+                    const evaluationDate = data.patientInfo?.evaluationDate || 'Sem data';
+                    const totalScore = data.totalScore || 0;
+
+                    log(`  📝 ${patientName} - ${evaluationDate} - Score: ${totalScore}`, 'info');
+                });
+
+                log(`📊 Total: ${evaluations.length} avaliações carregadas`, 'success');
+
+                // Salvar no window para debug
+                window.debugEvaluations = evaluations;
+                log('💾 Avaliações salvas em window.debugEvaluations', 'warning');
+
+            } catch (error) {
+                log(`❌ Erro ao carregar avaliações: ${error.message}`, 'error');
+                log(`❌ Código: ${error.code}`, 'error');
+                console.error('Erro completo:', error);
+            }
+        }
+
+        // Auto-iniciar teste
+        setTimeout(() => {
+            log('🚀 Iniciando teste automático...', 'info');
+            testFirebaseConnection();
+        }, 2000);
+    </script>
+</body>
+</html>

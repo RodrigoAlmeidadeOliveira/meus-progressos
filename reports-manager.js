@@ -222,44 +222,109 @@ class ReportsManager {
 
     convertResponsesToGroupScores(responses) {
         // Mapear questões para subgrupos (baseado no formulário original)
+        // Total: 149 questões
         const questionToSubgroupMap = {
-            // Habilidades Comunicativas
-            'q1': 'Contato Visual',
-            'q2': 'Contato Visual', 
-            'q3': 'Comunicação Alternativa',
-            'q4': 'Comunicação Alternativa',
-            'q5': 'Linguagem Expressiva',
-            'q6': 'Linguagem Expressiva',
-            'q7': 'Linguagem Receptiva',
-            'q8': 'Linguagem Receptiva',
-            
-            // Habilidades Sociais  
-            'q9': 'Expressão Facial',
-            'q10': 'Expressão Facial',
-            'q11': 'Imitação',
-            'q12': 'Imitação',
-            'q13': 'Atenção Compartilhada',
-            'q14': 'Atenção Compartilhada',
-            'q15': 'Brincar',
-            'q16': 'Brincar',
-            
-            // Habilidades Funcionais
-            'q17': 'Auto Cuidado',
-            'q18': 'Auto Cuidado',
-            'q19': 'Vestir-se',
-            'q20': 'Vestir-se',
-            'q21': 'Uso do Banheiro',
-            'q22': 'Uso do Banheiro',
-            
-            // Habilidades Emocionais
-            'q23': 'Controle Inibitório',
-            'q24': 'Controle Inibitório',
-            'q25': 'Flexibilidade',
-            'q26': 'Flexibilidade',
-            'q27': 'Resposta Emocional',
-            'q28': 'Resposta Emocional',
-            'q29': 'Empatia',
-            'q30': 'Empatia'
+            // Habilidades Comunicativas (q1-q40)
+            // Contato Visual (q1-q10)
+            'q1': 'Contato Visual', 'q2': 'Contato Visual', 'q3': 'Contato Visual',
+            'q4': 'Contato Visual', 'q5': 'Contato Visual', 'q6': 'Contato Visual',
+            'q7': 'Contato Visual', 'q8': 'Contato Visual', 'q9': 'Contato Visual',
+            'q10': 'Contato Visual',
+
+            // Comunicação Alternativa (q11-q20)
+            'q11': 'Comunicação Alternativa', 'q12': 'Comunicação Alternativa',
+            'q13': 'Comunicação Alternativa', 'q14': 'Comunicação Alternativa',
+            'q15': 'Comunicação Alternativa', 'q16': 'Comunicação Alternativa',
+            'q17': 'Comunicação Alternativa', 'q18': 'Comunicação Alternativa',
+            'q19': 'Comunicação Alternativa', 'q20': 'Comunicação Alternativa',
+
+            // Linguagem Expressiva (q21-q30)
+            'q21': 'Linguagem Expressiva', 'q22': 'Linguagem Expressiva',
+            'q23': 'Linguagem Expressiva', 'q24': 'Linguagem Expressiva',
+            'q25': 'Linguagem Expressiva', 'q26': 'Linguagem Expressiva',
+            'q27': 'Linguagem Expressiva', 'q28': 'Linguagem Expressiva',
+            'q29': 'Linguagem Expressiva', 'q30': 'Linguagem Expressiva',
+
+            // Linguagem Receptiva (q31-q40)
+            'q31': 'Linguagem Receptiva', 'q32': 'Linguagem Receptiva',
+            'q33': 'Linguagem Receptiva', 'q34': 'Linguagem Receptiva',
+            'q35': 'Linguagem Receptiva', 'q36': 'Linguagem Receptiva',
+            'q37': 'Linguagem Receptiva', 'q38': 'Linguagem Receptiva',
+            'q39': 'Linguagem Receptiva', 'q40': 'Linguagem Receptiva',
+
+            // Habilidades Sociais (q41-q80)
+            // Expressão Facial (q41-q50)
+            'q41': 'Expressão Facial', 'q42': 'Expressão Facial',
+            'q43': 'Expressão Facial', 'q44': 'Expressão Facial',
+            'q45': 'Expressão Facial', 'q46': 'Expressão Facial',
+            'q47': 'Expressão Facial', 'q48': 'Expressão Facial',
+            'q49': 'Expressão Facial', 'q50': 'Expressão Facial',
+
+            // Imitação (q51-q60)
+            'q51': 'Imitação', 'q52': 'Imitação', 'q53': 'Imitação',
+            'q54': 'Imitação', 'q55': 'Imitação', 'q56': 'Imitação',
+            'q57': 'Imitação', 'q58': 'Imitação', 'q59': 'Imitação',
+            'q60': 'Imitação',
+
+            // Atenção Compartilhada (q61-q70)
+            'q61': 'Atenção Compartilhada', 'q62': 'Atenção Compartilhada',
+            'q63': 'Atenção Compartilhada', 'q64': 'Atenção Compartilhada',
+            'q65': 'Atenção Compartilhada', 'q66': 'Atenção Compartilhada',
+            'q67': 'Atenção Compartilhada', 'q68': 'Atenção Compartilhada',
+            'q69': 'Atenção Compartilhada', 'q70': 'Atenção Compartilhada',
+
+            // Brincar (q71-q80)
+            'q71': 'Brincar', 'q72': 'Brincar', 'q73': 'Brincar',
+            'q74': 'Brincar', 'q75': 'Brincar', 'q76': 'Brincar',
+            'q77': 'Brincar', 'q78': 'Brincar', 'q79': 'Brincar',
+            'q80': 'Brincar',
+
+            // Habilidades Funcionais (q81-q109)
+            // Auto Cuidado (q81-q89)
+            'q81': 'Auto Cuidado', 'q82': 'Auto Cuidado', 'q83': 'Auto Cuidado',
+            'q84': 'Auto Cuidado', 'q85': 'Auto Cuidado', 'q86': 'Auto Cuidado',
+            'q87': 'Auto Cuidado', 'q88': 'Auto Cuidado', 'q89': 'Auto Cuidado',
+
+            // Vestir-se (q90-q99)
+            'q90': 'Vestir-se', 'q91': 'Vestir-se', 'q92': 'Vestir-se',
+            'q93': 'Vestir-se', 'q94': 'Vestir-se', 'q95': 'Vestir-se',
+            'q96': 'Vestir-se', 'q97': 'Vestir-se', 'q98': 'Vestir-se',
+            'q99': 'Vestir-se',
+
+            // Uso do Banheiro (q100-q109)
+            'q100': 'Uso do Banheiro', 'q101': 'Uso do Banheiro',
+            'q102': 'Uso do Banheiro', 'q103': 'Uso do Banheiro',
+            'q104': 'Uso do Banheiro', 'q105': 'Uso do Banheiro',
+            'q106': 'Uso do Banheiro', 'q107': 'Uso do Banheiro',
+            'q108': 'Uso do Banheiro', 'q109': 'Uso do Banheiro',
+
+            // Habilidades Emocionais (q110-q149)
+            // Controle Inibitório (q110-q119)
+            'q110': 'Controle Inibitório', 'q111': 'Controle Inibitório',
+            'q112': 'Controle Inibitório', 'q113': 'Controle Inibitório',
+            'q114': 'Controle Inibitório', 'q115': 'Controle Inibitório',
+            'q116': 'Controle Inibitório', 'q117': 'Controle Inibitório',
+            'q118': 'Controle Inibitório', 'q119': 'Controle Inibitório',
+
+            // Flexibilidade (q120-q129)
+            'q120': 'Flexibilidade', 'q121': 'Flexibilidade',
+            'q122': 'Flexibilidade', 'q123': 'Flexibilidade',
+            'q124': 'Flexibilidade', 'q125': 'Flexibilidade',
+            'q126': 'Flexibilidade', 'q127': 'Flexibilidade',
+            'q128': 'Flexibilidade', 'q129': 'Flexibilidade',
+
+            // Resposta Emocional (q130-q139)
+            'q130': 'Resposta Emocional', 'q131': 'Resposta Emocional',
+            'q132': 'Resposta Emocional', 'q133': 'Resposta Emocional',
+            'q134': 'Resposta Emocional', 'q135': 'Resposta Emocional',
+            'q136': 'Resposta Emocional', 'q137': 'Resposta Emocional',
+            'q138': 'Resposta Emocional', 'q139': 'Resposta Emocional',
+
+            // Empatia (q140-q149)
+            'q140': 'Empatia', 'q141': 'Empatia', 'q142': 'Empatia',
+            'q143': 'Empatia', 'q144': 'Empatia', 'q145': 'Empatia',
+            'q146': 'Empatia', 'q147': 'Empatia', 'q148': 'Empatia',
+            'q149': 'Empatia'
         };
 
         const subgroupScores = {};
@@ -1375,6 +1440,485 @@ class ReportsManager {
             }
         });
         this.charts = {};
+    }
+
+    // Novo método para visualização detalhada de uma avaliação
+    showEvaluationDetails(evaluation) {
+        console.log('🔍 Mostrando detalhes da avaliação:', evaluation);
+
+        // Criar modal se não existir
+        let modal = document.getElementById('evaluation-details-modal');
+        if (!modal) {
+            modal = this.createEvaluationDetailsModal();
+        }
+
+        // Preencher com dados da avaliação
+        this.populateEvaluationDetails(modal, evaluation);
+
+        // Mostrar modal
+        modal.style.display = 'flex';
+    }
+
+    createEvaluationDetailsModal() {
+        const modal = document.createElement('div');
+        modal.id = 'evaluation-details-modal';
+        modal.className = 'modal-overlay';
+        modal.style.cssText = `
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+
+        modal.innerHTML = `
+            <div class="modal-content-evaluation" style="
+                background: white;
+                border-radius: 10px;
+                max-width: 1200px;
+                width: 100%;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            ">
+                <div class="modal-header-evaluation" style="
+                    position: sticky;
+                    top: 0;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    color: white;
+                    padding: 20px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    z-index: 100;
+                ">
+                    <h2 id="evaluation-title" style="margin: 0;">Detalhes da Avaliação</h2>
+                    <button class="close-modal-btn" onclick="document.getElementById('evaluation-details-modal').style.display='none'" style="
+                        background: rgba(255, 255, 255, 0.2);
+                        border: none;
+                        color: white;
+                        font-size: 24px;
+                        cursor: pointer;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">&times;</button>
+                </div>
+                <div id="evaluation-content" class="modal-body-evaluation" style="padding: 30px;">
+                    <!-- Conteúdo será preenchido dinamicamente -->
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Fechar ao clicar fora do modal
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        return modal;
+    }
+
+    populateEvaluationDetails(modal, evaluation) {
+        const title = modal.querySelector('#evaluation-title');
+        const content = modal.querySelector('#evaluation-content');
+
+        const patientName = evaluation.patientInfo?.name || 'Paciente';
+        const evalDate = evaluation.patientInfo?.evaluationDate || evaluation.createdAt;
+        const formattedDate = new Date(evalDate).toLocaleDateString('pt-BR');
+
+        title.textContent = `Avaliação de ${patientName} - ${formattedDate}`;
+
+        let html = `
+            <div class="evaluation-summary" style="
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+            ">
+                <h3 style="margin-top: 0;">📊 Resumo Geral</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong>Paciente:</strong> ${patientName}
+                    </div>
+                    <div>
+                        <strong>Data:</strong> ${formattedDate}
+                    </div>
+                    <div>
+                        <strong>Avaliador:</strong> ${evaluation.patientInfo?.evaluatorName || 'Não informado'}
+                    </div>
+                    <div>
+                        <strong>Pontuação Total:</strong> ${evaluation.totalScore || 0} pontos
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Adicionar visualização por categorias e subgrupos
+        html += this.generateQuestionsView(evaluation);
+
+        content.innerHTML = html;
+    }
+
+    generateQuestionsView(evaluation) {
+        if (!evaluation.responses) {
+            return '<p>Nenhuma resposta encontrada para esta avaliação.</p>';
+        }
+
+        // Mapa de perguntas (você pode expandir isso com as descrições completas das 149 perguntas)
+        const questionDescriptions = this.getQuestionDescriptions();
+
+        let html = '<div class="questions-view">';
+
+        // Organizar por categoria
+        const categoriesConfig = {
+            'Habilidades Comunicativas': {
+                color: '#667eea',
+                subgroups: {
+                    'Contato Visual': { range: [1, 10], questions: [] },
+                    'Comunicação Alternativa': { range: [11, 20], questions: [] },
+                    'Linguagem Expressiva': { range: [21, 30], questions: [] },
+                    'Linguagem Receptiva': { range: [31, 40], questions: [] }
+                }
+            },
+            'Habilidades Sociais': {
+                color: '#4facfe',
+                subgroups: {
+                    'Expressão Facial': { range: [41, 50], questions: [] },
+                    'Imitação': { range: [51, 60], questions: [] },
+                    'Atenção Compartilhada': { range: [61, 70], questions: [] },
+                    'Brincar': { range: [71, 80], questions: [] }
+                }
+            },
+            'Habilidades Funcionais': {
+                color: '#ffecd2',
+                subgroups: {
+                    'Auto Cuidado': { range: [81, 89], questions: [] },
+                    'Vestir-se': { range: [90, 99], questions: [] },
+                    'Uso do Banheiro': { range: [100, 109], questions: [] }
+                }
+            },
+            'Habilidades Emocionais': {
+                color: '#d299c2',
+                subgroups: {
+                    'Controle Inibitório': { range: [110, 119], questions: [] },
+                    'Flexibilidade': { range: [120, 129], questions: [] },
+                    'Resposta Emocional': { range: [130, 139], questions: [] },
+                    'Empatia': { range: [140, 149], questions: [] }
+                }
+            }
+        };
+
+        // Preencher respostas nas estruturas
+        Object.entries(evaluation.responses).forEach(([questionId, score]) => {
+            const questionNum = parseInt(questionId.replace('q', ''));
+            const description = questionDescriptions[questionId] || `Questão ${questionNum}`;
+
+            Object.entries(categoriesConfig).forEach(([categoryName, categoryData]) => {
+                Object.entries(categoryData.subgroups).forEach(([subgroupName, subgroupData]) => {
+                    if (questionNum >= subgroupData.range[0] && questionNum <= subgroupData.range[1]) {
+                        subgroupData.questions.push({
+                            id: questionId,
+                            num: questionNum,
+                            description: description,
+                            score: parseInt(score)
+                        });
+                    }
+                });
+            });
+        });
+
+        // Gerar HTML para cada categoria
+        Object.entries(categoriesConfig).forEach(([categoryName, categoryData]) => {
+            html += `
+                <div class="category-section" style="margin-bottom: 30px;">
+                    <h3 style="
+                        color: ${categoryData.color};
+                        border-bottom: 3px solid ${categoryData.color};
+                        padding-bottom: 10px;
+                        margin-bottom: 20px;
+                    ">${categoryName}</h3>
+            `;
+
+            // Gerar HTML para cada subgrupo
+            Object.entries(categoryData.subgroups).forEach(([subgroupName, subgroupData]) => {
+                if (subgroupData.questions.length > 0) {
+                    // Calcular estatísticas do subgrupo
+                    const total = subgroupData.questions.reduce((sum, q) => sum + q.score, 0);
+                    const max = subgroupData.questions.length * 5;
+                    const percentage = Math.round((total / max) * 100);
+
+                    html += `
+                        <div class="subgroup-section" style="
+                            background: ${categoryData.color}10;
+                            border-left: 4px solid ${categoryData.color};
+                            padding: 15px;
+                            margin-bottom: 20px;
+                            border-radius: 5px;
+                        ">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h4 style="margin: 0; color: ${categoryData.color};">${subgroupName}</h4>
+                                <div style="text-align: right;">
+                                    <div style="font-size: 24px; font-weight: bold; color: ${categoryData.color};">${percentage}%</div>
+                                    <div style="font-size: 12px; color: #666;">${total}/${max} pontos</div>
+                                </div>
+                            </div>
+
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: ${categoryData.color}20;">
+                                        <th style="padding: 10px; text-align: left; width: 60px;">Questão</th>
+                                        <th style="padding: 10px; text-align: left;">Descrição</th>
+                                        <th style="padding: 10px; text-align: center; width: 100px;">Pontuação</th>
+                                        <th style="padding: 10px; text-align: center; width: 120px;">Nível</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                    `;
+
+                    // Ordenar questões por número
+                    subgroupData.questions.sort((a, b) => a.num - b.num);
+
+                    subgroupData.questions.forEach(question => {
+                        const level = this.getScoreLevel(question.score);
+                        html += `
+                            <tr style="border-bottom: 1px solid #eee;">
+                                <td style="padding: 10px; font-weight: bold;">Q${question.num}</td>
+                                <td style="padding: 10px;">${question.description}</td>
+                                <td style="padding: 10px; text-align: center; font-weight: bold; font-size: 18px;">
+                                    ${question.score}/5
+                                </td>
+                                <td style="padding: 10px; text-align: center;">
+                                    <span style="
+                                        background: ${level.color};
+                                        color: white;
+                                        padding: 5px 10px;
+                                        border-radius: 15px;
+                                        font-size: 12px;
+                                        font-weight: bold;
+                                    ">${level.label}</span>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                }
+            });
+
+            html += `</div>`;
+        });
+
+        html += '</div>';
+        return html;
+    }
+
+    getScoreLevel(score) {
+        if (score >= 5) return { label: 'Excelente', color: '#28a745' };
+        if (score >= 4) return { label: 'Bom', color: '#5cb85c' };
+        if (score >= 3) return { label: 'Regular', color: '#ffc107' };
+        if (score >= 2) return { label: 'Baixo', color: '#ff9800' };
+        return { label: 'Muito Baixo', color: '#dc3545' };
+    }
+
+    getQuestionDescriptions() {
+        // Descrições completas das 149 questões
+        return {
+            // Contato Visual (q1-q10)
+            'q1': 'Olhar para o adulto quando chamada pelo nome',
+            'q2': 'Manter contato ocular por pelo menos 1 segundo, quando chamada pelo nome',
+            'q3': 'Olhar nos olhos de uma pessoa durante uma interação (aprox. 3 segundos)',
+            'q4': 'Olhar nos olhos de uma pessoa durante 5 segundos',
+            'q5': 'Olhar quando engajada numa brincadeira',
+            'q6': 'Olhar à distância de 3 metros',
+            'q7': 'Olhar à distância de 5 metros',
+            'q8': 'Olhar à distância de 5 metros e engajada numa brincadeira',
+            'q9': 'Olhar para mais de uma pessoa (duas pessoas chamam a criança alternadamente)',
+            'q10': 'Manter contato visual durante toda a interação',
+
+            // Comunicação Alternativa (q11-q20)
+            'q11': 'Apontar para objetos desejados',
+            'q12': 'Usar gestos simples (acenar, tchau)',
+            'q13': 'Usar cartões de comunicação',
+            'q14': 'Combinar gestos com vocalizações',
+            'q15': 'Usar PECS (Sistema de Comunicação por Troca de Figuras)',
+            'q16': 'Indicar sim/não com a cabeça',
+            'q17': 'Usar dispositivos de comunicação assistida',
+            'q18': 'Expressar necessidades básicas com gestos',
+            'q19': 'Responder a perguntas com gestos',
+            'q20': 'Iniciar comunicação usando gestos',
+
+            // Linguagem Expressiva (q21-q30)
+            'q21': 'Emitir sons vocálicos',
+            'q22': 'Imitar sons simples',
+            'q23': 'Dizer palavras simples (mamã, papá)',
+            'q24': 'Combinar duas palavras',
+            'q25': 'Formar frases simples (3-4 palavras)',
+            'q26': 'Nomear objetos comuns',
+            'q27': 'Descrever ações simples',
+            'q28': 'Fazer pedidos verbais',
+            'q29': 'Responder perguntas simples',
+            'q30': 'Contar experiências curtas',
+
+            // Linguagem Receptiva (q31-q40)
+            'q31': 'Responder ao próprio nome',
+            'q32': 'Seguir comandos simples (vem aqui)',
+            'q33': 'Identificar partes do corpo',
+            'q34': 'Apontar para objetos nomeados',
+            'q35': 'Seguir instruções de dois passos',
+            'q36': 'Compreender conceitos espaciais (em cima, embaixo)',
+            'q37': 'Identificar cores',
+            'q38': 'Compreender perguntas "onde"',
+            'q39': 'Compreender perguntas "o que"',
+            'q40': 'Seguir instruções complexas (3+ passos)',
+
+            // Expressão Facial (q41-q50)
+            'q41': 'Sorrir em resposta a estímulos sociais',
+            'q42': 'Demonstrar expressão de alegria',
+            'q43': 'Mostrar tristeza facialmente',
+            'q44': 'Expressar surpresa',
+            'q45': 'Demonstrar medo ou apreensão',
+            'q46': 'Mostrar raiva apropriadamente',
+            'q47': 'Responder a expressões faciais de outros',
+            'q48': 'Imitar expressões faciais',
+            'q49': 'Usar expressões para comunicar necessidades',
+            'q50': 'Modular expressões conforme contexto',
+
+            // Imitação (q51-q60)
+            'q51': 'Imitar ações com objetos',
+            'q52': 'Imitar movimentos motores grossos',
+            'q53': 'Imitar movimentos motores finos',
+            'q54': 'Imitar sons e vocalizações',
+            'q55': 'Imitar sequências de ações',
+            'q56': 'Imitar comportamentos sociais',
+            'q57': 'Imitar espontaneamente',
+            'q58': 'Imitar após demonstração',
+            'q59': 'Imitar com precisão',
+            'q60': 'Usar imitação para aprender novas habilidades',
+
+            // Atenção Compartilhada (q61-q70)
+            'q61': 'Seguir o olhar do adulto',
+            'q62': 'Seguir apontamento',
+            'q63': 'Compartilhar interesse em objetos',
+            'q64': 'Mostrar objetos para outras pessoas',
+            'q65': 'Verificar a reação do adulto',
+            'q66': 'Alternar olhar entre objeto e pessoa',
+            'q67': 'Apontar para compartilhar interesse',
+            'q68': 'Iniciar atenção compartilhada',
+            'q69': 'Responder a atenção compartilhada',
+            'q70': 'Manter atenção compartilhada por período prolongado',
+
+            // Brincar (q71-q80)
+            'q71': 'Explorar brinquedos',
+            'q72': 'Brincar funcionalmente com objetos',
+            'q73': 'Engajar em brincadeira paralela',
+            'q74': 'Participar de brincadeiras simples',
+            'q75': 'Brincar de faz-de-conta',
+            'q76': 'Compartilhar brinquedos',
+            'q77': 'Seguir regras simples em jogos',
+            'q78': 'Participar de brincadeiras cooperativas',
+            'q79': 'Criar sequências de brincadeiras',
+            'q80': 'Brincar de forma imaginativa e criativa',
+
+            // Auto Cuidado (q81-q89)
+            'q81': 'Aceitar ser alimentado',
+            'q82': 'Segurar colher',
+            'q83': 'Comer sozinho com colher',
+            'q84': 'Beber de copo',
+            'q85': 'Usar guardanapo',
+            'q86': 'Lavar as mãos (com ajuda)',
+            'q87': 'Lavar as mãos (independentemente)',
+            'q88': 'Escovar dentes (com ajuda)',
+            'q89': 'Escovar dentes (independentemente)',
+
+            // Vestir-se (q90-q99)
+            'q90': 'Cooperar ao ser vestido',
+            'q91': 'Tirar peças simples de roupa',
+            'q92': 'Colocar peças simples de roupa',
+            'q93': 'Tirar sapatos',
+            'q94': 'Colocar sapatos',
+            'q95': 'Subir zíper',
+            'q96': 'Abotoar botões grandes',
+            'q97': 'Vestir-se completamente (com ajuda)',
+            'q98': 'Vestir-se completamente (independentemente)',
+            'q99': 'Escolher roupas apropriadas',
+
+            // Uso do Banheiro (q100-q109)
+            'q100': 'Indicar necessidade de ir ao banheiro',
+            'q101': 'Sentar no vaso sanitário',
+            'q102': 'Usar o banheiro com assistência',
+            'q103': 'Usar o banheiro independentemente (dia)',
+            'q104': 'Usar o banheiro independentemente (noite)',
+            'q105': 'Limpar-se adequadamente',
+            'q106': 'Lavar as mãos após usar o banheiro',
+            'q107': 'Dar descarga',
+            'q108': 'Vestir-se após usar o banheiro',
+            'q109': 'Gerenciar completamente a rotina do banheiro',
+
+            // Controle Inibitório (q110-q119)
+            'q110': 'Esperar sua vez em atividades',
+            'q111': 'Parar uma atividade quando solicitado',
+            'q112': 'Controlar impulsos básicos',
+            'q113': 'Não interromper outros',
+            'q114': 'Pensar antes de agir',
+            'q115': 'Resistir a distrações',
+            'q116': 'Manter-se em tarefa',
+            'q117': 'Controlar comportamentos repetitivos',
+            'q118': 'Adaptar comportamento a contextos diferentes',
+            'q119': 'Demonstrar autocontrole em situações desafiadoras',
+
+            // Flexibilidade (q120-q129)
+            'q120': 'Aceitar pequenas mudanças na rotina',
+            'q121': 'Experimentar novos alimentos',
+            'q122': 'Tolerar mudanças no ambiente',
+            'q123': 'Adaptar-se a novos cuidadores',
+            'q124': 'Lidar com transições',
+            'q125': 'Aceitar mudanças de planos',
+            'q126': 'Experimentar novas atividades',
+            'q127': 'Tolerar imprevistos',
+            'q128': 'Demonstrar pensamento flexível',
+            'q129': 'Ajustar comportamento a novas situações',
+
+            // Resposta Emocional (q130-q139)
+            'q130': 'Acalmar-se com conforto do adulto',
+            'q131': 'Expressar emoções apropriadamente',
+            'q132': 'Identificar emoções básicas',
+            'q133': 'Demonstrar afeto',
+            'q134': 'Buscar conforto quando necessário',
+            'q135': 'Controlar reações emocionais intensas',
+            'q136': 'Responder a conforto emocional',
+            'q137': 'Demonstrar orgulho por conquistas',
+            'q138': 'Lidar com frustração',
+            'q139': 'Regular emoções independentemente',
+
+            // Empatia (q140-q149)
+            'q140': 'Perceber quando outros estão chateados',
+            'q141': 'Demonstrar preocupação com outros',
+            'q142': 'Oferecer conforto a outros',
+            'q143': 'Compartilhar com outros',
+            'q144': 'Comemorar sucessos de outros',
+            'q145': 'Respeitar sentimentos alheios',
+            'q146': 'Ajustar comportamento baseado em emoções de outros',
+            'q147': 'Pedir desculpas quando apropriado',
+            'q148': 'Demonstrar empatia em situações variadas',
+            'q149': 'Tomar perspectiva de outras pessoas'
+        };
     }
 }
 

@@ -183,39 +183,6 @@
                     <button type="button" id="analytics-run" class="btn-primary">📈 Gerar análise</button>
                 </div>
 
-                <div class="analytics-detail-controls">
-                    <div class="detail-heading">
-                        <h4>Visualização por Avaliação</h4>
-                        <p>Selecione um paciente e escolha uma avaliação específica para ver todas as 149 respostas.</p>
-                    </div>
-                    <div class="detail-grid">
-                        <div class="filter-group">
-                            <label for="analytics-detail-patient">Paciente:</label>
-                            <select id="analytics-detail-patient">
-                                <option value="">Selecione um paciente...</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="analytics-detail-evaluation">Avaliação:</label>
-                            <select id="analytics-detail-evaluation" disabled>
-                                <option value="">Selecione uma avaliação...</option>
-                            </select>
-                        </div>
-                        <div class="detail-actions">
-                            <button type="button" id="analytics-export-evaluation" class="btn-secondary" disabled>
-                                💾 Exportar avaliação
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="analytics-evaluation-detail" class="analytics-evaluation-detail">
-                    <div class="analytics-empty">
-                        <h4>Nenhuma avaliação selecionada</h4>
-                        <p>Escolha um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
-                    </div>
-                </div>
-
                 <div class="analytics-results" id="analytics-results">
                     <div class="analytics-empty">
                         <h4>Comece uma análise</h4>
@@ -436,12 +403,21 @@
     </div>
 
     <!-- Script melhorado com verificação de conexão e backup -->
-    <script src="script-terapeuta-melhorado.js?v=3.0"></script>
+    <script>
+        // Forçar reload sem cache
+        const timestamp = new Date().getTime();
+        const script1 = document.createElement('script');
+        script1.src = `script-terapeuta-melhorado.js?t=${timestamp}`;
+        document.head.appendChild(script1);
+
+        const script2 = document.createElement('script');
+        script2.src = `reports-manager.js?t=${timestamp}`;
+        document.head.appendChild(script2);
+    </script>
 
     <!-- Sistema de Relatórios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="reports-manager.js?v=3.0"></script>
     
     <!-- Indicadores de status e notificações -->
     <style>

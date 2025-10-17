@@ -79,19 +79,19 @@ class FirebaseManagerTerapeutaMelhorado {
 
     async getAllEvaluations() {
         console.log('🔍 Terapeuta: getAllEvaluations - Status:', this.connectionStatus);
-        
+
         let cloudData = [];
         let localData = [];
 
-        // Tentar buscar dados do Firebase primeiro
-        if (this.initialized && this.connectionStatus === 'connected') {
+        // Tentar buscar dados do Firebase primeiro (sem depender do connectionStatus)
+        if (this.initialized && this.db) {
             try {
                 console.log('☁️ Terapeuta: Buscando dados do Firebase...');
-                const { getDocs, collection, orderBy, query } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-                
-                const q = query(collection(this.db, 'evaluations'), orderBy('createdAt', 'desc'));
-                const querySnapshot = await getDocs(q);
-                
+                const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+
+                // Buscar TODOS os documentos sem orderBy para pegar também os que não têm createdAt
+                const querySnapshot = await getDocs(collection(this.db, 'evaluations'));
+
                 querySnapshot.forEach((doc) => {
                     const data = doc.data();
                     cloudData.push({
@@ -100,8 +100,21 @@ class FirebaseManagerTerapeutaMelhorado {
                         ...data
                     });
                 });
-                
+
+                // Ordenar manualmente por createdAt/updatedAt
+                cloudData.sort((a, b) => {
+                    const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                    const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                    return dateB - dateA;
+                });
+
                 console.log(`✅ Terapeuta: ${cloudData.length} avaliações do Firebase`);
+
+                // Marcar como conectado se conseguimos buscar dados
+                if (this.connectionStatus !== 'connected') {
+                    this.connectionStatus = 'connected';
+                    this.notifyStatusChange('connected');
+                }
             } catch (error) {
                 console.error('❌ Terapeuta: Erro ao buscar Firebase:', error);
                 this.connectionStatus = 'error';
@@ -332,7 +345,12 @@ class FirebaseManagerTerapeutaMelhorado {
             item.evaluationDate ||
             (item.createdAt ? new Date(item.createdAt).toISOString().split('T')[0] : null) ||
             new Date().toISOString().split('T')[0];
-        return `${name}_${evaluationDate}`;
+
+        // Adicionar timestamp para evitar colisões quando houver múltiplas avaliações no mesmo dia
+        const timestamp = item.createdAt || item.timestamp || new Date().toISOString();
+        const timestampHash = timestamp.replace(/[^0-9]/g, '').slice(0, 10); // Usar apenas números do timestamp
+
+        return `${name}_${evaluationDate}_${timestampHash}`;
     }
 
     generatePatientId(name) {
@@ -349,28 +367,45 @@ class FirebaseManagerTerapeutaMelhorado {
 
         console.log('🧹 Iniciando deduplicação de avaliações no Firebase...');
 
-        const { getDocs, collection, writeBatch, doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+        const { getDocs, collection, deleteDoc, doc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
         const snapshot = await getDocs(collection(this.db, 'evaluations'));
 
+        // Agrupar por nome do paciente + data de avaliação (sem timestamp)
+        // Isso identifica avaliações duplicadas do mesmo paciente no mesmo dia
         const groups = new Map();
         snapshot.forEach((docSnap) => {
             const data = docSnap.data() || {};
-            const evaluationId = data.evaluationId || this.generateEvaluationIdFromData(data);
-            if (!groups.has(evaluationId)) {
-                groups.set(evaluationId, []);
+
+            // Gerar chave de comparação: nome + data (sem timestamp)
+            const name = (data.patientInfo?.name || 'avaliacao')
+                .toLowerCase()
+                .replace(/\s+/g, '_')
+                .replace(/[^a-z0-9_]/g, '');
+
+            const evaluationDate = data.patientInfo?.evaluationDate ||
+                data.evaluationDate ||
+                (data.createdAt ? new Date(data.createdAt).toISOString().split('T')[0] : null) ||
+                new Date().toISOString().split('T')[0];
+
+            const comparisonKey = `${name}_${evaluationDate}`;
+
+            if (!groups.has(comparisonKey)) {
+                groups.set(comparisonKey, []);
             }
-            groups.get(evaluationId).push({
+            groups.get(comparisonKey).push({
                 docId: docSnap.id,
                 data
             });
         });
 
-        const batch = writeBatch(this.db);
-        let rewritten = 0;
+        let consolidated = 0;
         let deleted = 0;
+        const nowIso = new Date().toISOString();
 
-        for (const [evaluationId, documents] of groups.entries()) {
-            if (!documents || documents.length === 0) continue;
+        for (const [comparisonKey, documents] of groups.entries()) {
+            if (!documents || documents.length <= 1) continue; // Não há duplicatas
+
+            console.log(`🔍 Encontradas ${documents.length} duplicatas para ${comparisonKey}`);
 
             // Ordenar mantendo o registro mais recente por updatedAt ou createdAt
             const sorted = documents.sort((a, b) => {
@@ -379,35 +414,41 @@ class FirebaseManagerTerapeutaMelhorado {
                 return dateB - dateA;
             });
 
+            // Manter o primeiro (mais recente) e deletar o resto
             const primary = sorted[0];
-            const nowIso = new Date().toISOString();
+
+            // Gerar novo evaluationId único com timestamp
+            const newEvaluationId = this.generateEvaluationIdFromData(primary.data);
+
             const payload = {
                 ...primary.data,
-                evaluationId,
+                evaluationId: newEvaluationId,
                 patientId: primary.data.patientId || this.generatePatientId(primary.data.patientInfo?.name),
                 createdAt: primary.data.createdAt || nowIso,
                 updatedAt: nowIso,
                 deduplicatedAt: nowIso
             };
 
-            await setDoc(doc(this.db, 'evaluations', evaluationId), payload, { merge: true });
-            rewritten++;
+            // Salvar o registro consolidado
+            await setDoc(doc(this.db, 'evaluations', newEvaluationId), payload);
+            consolidated++;
+            console.log(`✅ Consolidado: ${newEvaluationId}`);
 
-            sorted.forEach(entry => {
-                if (entry.docId !== evaluationId) {
-                    batch.delete(doc(this.db, 'evaluations', entry.docId));
+            // Deletar todos os registros antigos (incluindo o primário se o ID mudou)
+            for (const entry of sorted) {
+                try {
+                    await deleteDoc(doc(this.db, 'evaluations', entry.docId));
                     deleted++;
+                    console.log(`🗑️ Removido: ${entry.docId}`);
+                } catch (error) {
+                    console.warn(`⚠️ Erro ao deletar ${entry.docId}:`, error);
                 }
-            });
+            }
         }
 
-        if (deleted > 0) {
-            await batch.commit();
-        }
-
-        console.log(`🧹 Deduplicação concluída: ${rewritten} registros consolidados, ${deleted} duplicatas removidas.`);
+        console.log(`🧹 Deduplicação concluída: ${consolidated} registros consolidados, ${deleted} duplicatas removidas.`);
         return {
-            consolidated: rewritten,
+            consolidated,
             removed: deleted,
             totalDocuments: snapshot.size,
             uniqueEvaluations: groups.size
@@ -416,11 +457,11 @@ class FirebaseManagerTerapeutaMelhorado {
 
     async getFirebaseData() {
         try {
-            const { getDocs, collection, orderBy, query } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
-            
-            const q = query(collection(this.db, 'evaluations'), orderBy('createdAt', 'desc'));
-            const querySnapshot = await getDocs(q);
-            
+            const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
+
+            // Buscar TODOS os documentos sem orderBy
+            const querySnapshot = await getDocs(collection(this.db, 'evaluations'));
+
             const cloudData = [];
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
@@ -431,7 +472,14 @@ class FirebaseManagerTerapeutaMelhorado {
                     evaluationId
                 });
             });
-            
+
+            // Ordenar manualmente por createdAt/updatedAt
+            cloudData.sort((a, b) => {
+                const dateA = new Date(a.updatedAt || a.createdAt || 0).getTime();
+                const dateB = new Date(b.updatedAt || b.createdAt || 0).getTime();
+                return dateB - dateA;
+            });
+
             return cloudData;
         } catch (error) {
             console.warn('⚠️ Erro ao buscar dados do Firebase:', error);
@@ -548,32 +596,6 @@ class FirebaseManagerTerapeutaMelhorado {
         return { synced, errors, total: localData.length };
     }
 
-    async runDeduplication() {
-        console.log('♻️ Terapeuta: Correção de duplicados solicitada pelo usuário.');
-        if (this.firebaseManager.connectionStatus !== 'connected') {
-            this.showNotification('Conecte-se ao Firebase para corrigir duplicadas.', 'warning');
-            return;
-        }
-
-        this.showLoading(true);
-        this.showNotification('Iniciando correção de duplicatas...', 'info');
-
-        try {
-            const result = await this.firebaseManager.deduplicateEvaluations();
-            this.showNotification(
-                `Correção concluída: ${result.removed} duplicata(s) removida(s).`,
-                result.removed > 0 ? 'success' : 'info'
-            );
-            console.log('♻️ Terapeuta: Resultado da deduplicação manual', result);
-            await this.refreshData(true);
-        } catch (error) {
-            console.error('❌ Erro ao remover duplicadas:', error);
-            this.showNotification('Erro ao remover duplicadas: ' + error.message, 'error');
-        } finally {
-            this.showLoading(false);
-        }
-    }
-
     removeFromLocalStorage(evaluationId) {
         try {
             // Tentar remover de diferentes estruturas do localStorage
@@ -672,8 +694,14 @@ class TerapeutaPanelMelhorado {
         this.autoRefreshInterval = null;
         this.lastReportDataUpdate = null;
         this.analyticsControls = null;
+        this.evaluationIndex = new Map();
+        this.evaluationsByPatient = new Map();
+        this.sortedPatients = [];
+        this.selectedEvaluationId = null;
+        this.currentDuplicateIds = new Set();
+        this.questionDescriptionsCache = null;
         this.runDeduplication = this.runDeduplication.bind(this);
-        
+
         this.init();
     }
 
@@ -792,12 +820,16 @@ class TerapeutaPanelMelhorado {
             dateTo: document.getElementById('analytics-date-to'),
             clear: document.getElementById('analytics-clear'),
             run: document.getElementById('analytics-run'),
+            detailPatient: document.getElementById('analytics-detail-patient'),
+            detailEvaluation: document.getElementById('analytics-detail-evaluation'),
+            viewEvaluation: document.getElementById('analytics-export-evaluation'),
             summary: {
                 total: document.getElementById('analytics-total-selected'),
                 averagePercent: document.getElementById('analytics-average-percent'),
                 bestGroup: document.getElementById('analytics-best-group')
             },
-            resultsContainer: document.getElementById('analytics-results')
+            resultsContainer: document.getElementById('analytics-results'),
+            evaluationDetailContainer: document.getElementById('analytics-evaluation-detail')
         };
 
         const autoUpdateHandler = () => this.updateAnalyticsResults();
@@ -826,8 +858,30 @@ class TerapeutaPanelMelhorado {
                 if (this.analyticsControls.evaluator) this.analyticsControls.evaluator.value = '';
                 if (this.analyticsControls.dateFrom) this.analyticsControls.dateFrom.value = '';
                 if (this.analyticsControls.dateTo) this.analyticsControls.dateTo.value = '';
+                if (this.analyticsControls.detailPatient) this.analyticsControls.detailPatient.value = '';
+                if (this.analyticsControls.detailEvaluation) {
+                    this.analyticsControls.detailEvaluation.innerHTML = '<option value=\"\">Selecione uma avaliação...</option>';
+                    this.analyticsControls.detailEvaluation.disabled = true;
+                }
+                if (this.analyticsControls.viewEvaluation) {
+                    this.analyticsControls.viewEvaluation.disabled = true;
+                }
+                this.selectedEvaluationId = null;
+                this.renderSelectedEvaluationDetail();
                 this.updateAnalyticsResults(true);
             });
+        }
+
+        if (this.analyticsControls.detailPatient) {
+            this.analyticsControls.detailPatient.addEventListener('change', (event) => this.handleDetailPatientChange(event));
+        }
+
+        if (this.analyticsControls.detailEvaluation) {
+            this.analyticsControls.detailEvaluation.addEventListener('change', (event) => this.handleDetailEvaluationChange(event));
+        }
+
+        if (this.analyticsControls.viewEvaluation) {
+            this.analyticsControls.viewEvaluation.addEventListener('click', () => this.exportSelectedEvaluation());
         }
     }
 
@@ -959,6 +1013,7 @@ class TerapeutaPanelMelhorado {
         try {
             const evaluations = await this.firebaseManager.getAllEvaluations();
             this.filteredEvaluations = evaluations;
+            this.indexEvaluations(evaluations);
             
             this.updateStatistics(evaluations);
             this.populateEvaluationsList(evaluations);
@@ -992,6 +1047,7 @@ class TerapeutaPanelMelhorado {
         try {
             const evaluations = await this.firebaseManager.getAllEvaluations();
             this.filteredEvaluations = evaluations;
+            this.indexEvaluations(evaluations);
             
             this.updateStatistics(evaluations);
             this.populateEvaluationsList(evaluations);
@@ -1217,6 +1273,534 @@ class TerapeutaPanelMelhorado {
                 evaluatorSelect.value = selectedEvaluator;
             }
         }
+
+        this.populateDetailSelectors();
+    }
+
+    indexEvaluations(evaluations) {
+        const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
+        this.evaluationIndex = new Map();
+        this.evaluationsByPatient = new Map();
+
+        evaluations.forEach((evaluation) => {
+            const evaluationId = this.getEvaluationId(evaluation);
+            if (!evaluationId) {
+                return;
+            }
+
+            this.evaluationIndex.set(evaluationId, evaluation);
+
+            const patientName = evaluation.patientInfo?.name?.trim() || 'Paciente não informado';
+            const patientKey = patientName.toLowerCase();
+
+            if (!this.evaluationsByPatient.has(patientKey)) {
+                this.evaluationsByPatient.set(patientKey, {
+                    key: patientKey,
+                    name: patientName,
+                    evaluations: []
+                });
+            }
+
+            this.evaluationsByPatient.get(patientKey).evaluations.push({
+                id: evaluationId,
+                data: evaluation
+            });
+        });
+
+        // Ordenar pacientes e avaliações por data (mais recente primeiro)
+        this.sortedPatients = Array.from(this.evaluationsByPatient.values()).sort((a, b) =>
+            collator.compare(a.name, b.name)
+        );
+
+        this.evaluationsByPatient.forEach((entry) => {
+            entry.evaluations.sort((a, b) => {
+                const dateA = this.parseEvaluationDate(a.data);
+                const dateB = this.parseEvaluationDate(b.data);
+                return (dateB ? dateB.getTime() : 0) - (dateA ? dateA.getTime() : 0);
+            });
+        });
+    }
+
+    populateDetailSelectors() {
+        if (!this.analyticsControls) return;
+
+        const patientSelect = this.analyticsControls.detailPatient;
+        const evaluationSelect = this.analyticsControls.detailEvaluation;
+        const exportButton = this.analyticsControls.viewEvaluation;
+
+        if (!patientSelect || !evaluationSelect) {
+            return;
+        }
+
+        const existingSelection = patientSelect.value;
+        const patients = this.sortedPatients || [];
+
+        let optionsHtml = '<option value="">Selecione um paciente...</option>';
+        patients.forEach(entry => {
+            const isSelected = entry.key === existingSelection;
+            optionsHtml += `<option value="${this.escapeHtml(entry.key)}"${isSelected ? ' selected' : ''}>${this.escapeHtml(entry.name)}</option>`;
+        });
+        patientSelect.innerHTML = optionsHtml;
+
+        const validSelection = patients.find(entry => entry.key === existingSelection) ? existingSelection : '';
+        if (!validSelection) {
+            patientSelect.value = '';
+        }
+
+        this.populateEvaluationOptionsForPatient(validSelection || null);
+
+        if (exportButton) {
+            exportButton.disabled = !this.selectedEvaluationId;
+        }
+    }
+
+    populateEvaluationOptionsForPatient(patientKey) {
+        const evaluationSelect = this.analyticsControls?.detailEvaluation;
+        const exportButton = this.analyticsControls?.viewEvaluation;
+
+        if (!evaluationSelect) {
+            return;
+        }
+
+        if (!patientKey || !this.evaluationsByPatient.has(patientKey)) {
+            evaluationSelect.innerHTML = '<option value="">Selecione uma avaliação...</option>';
+            evaluationSelect.disabled = true;
+            this.selectedEvaluationId = null;
+            if (exportButton) {
+                exportButton.disabled = true;
+            }
+            this.renderSelectedEvaluationDetail();
+            return;
+        }
+
+        const entry = this.evaluationsByPatient.get(patientKey);
+        let optionsHtml = '<option value="">Selecione uma avaliação...</option>';
+
+        entry.evaluations.forEach(({ id, data }) => {
+            const label = this.formatEvaluationOptionLabel(data);
+            const selectedAttr = id === this.selectedEvaluationId ? ' selected' : '';
+            optionsHtml += `<option value="${this.escapeHtml(id)}"${selectedAttr}>${this.escapeHtml(label)}</option>`;
+        });
+
+        evaluationSelect.innerHTML = optionsHtml;
+        evaluationSelect.disabled = entry.evaluations.length === 0;
+
+        if (!this.selectedEvaluationId || !entry.evaluations.some(ev => ev.id === this.selectedEvaluationId)) {
+            this.selectedEvaluationId = entry.evaluations.length > 0 ? entry.evaluations[0].id : null;
+            if (this.selectedEvaluationId) {
+                evaluationSelect.value = this.selectedEvaluationId;
+            }
+        }
+
+        if (exportButton) {
+            exportButton.disabled = !this.selectedEvaluationId;
+        }
+
+        this.renderSelectedEvaluationDetail();
+    }
+
+    handleDetailPatientChange(event) {
+        const patientKey = event.target.value || null;
+        this.selectedEvaluationId = null;
+        this.populateEvaluationOptionsForPatient(patientKey);
+    }
+
+    handleDetailEvaluationChange(event) {
+        const evaluationId = event.target.value || null;
+        this.selectedEvaluationId = evaluationId || null;
+        if (this.analyticsControls?.viewEvaluation) {
+            this.analyticsControls.viewEvaluation.disabled = !this.selectedEvaluationId;
+        }
+        this.renderSelectedEvaluationDetail();
+    }
+
+    renderSelectedEvaluationDetail() {
+        const container = this.analyticsControls?.evaluationDetailContainer;
+        const exportButton = this.analyticsControls?.viewEvaluation;
+        if (!container) {
+            return;
+        }
+
+        if (!this.selectedEvaluationId) {
+            container.innerHTML = `
+                <div class="analytics-empty">
+                    <h4>Nenhuma avaliação selecionada</h4>
+                    <p>Escolha um paciente e uma avaliação para visualizar os detalhes.</p>
+                </div>
+            `;
+            if (exportButton) {
+                exportButton.disabled = true;
+            }
+            return;
+        }
+
+        const evaluation = this.evaluationIndex.get(this.selectedEvaluationId);
+        if (!evaluation) {
+            container.innerHTML = `
+                <div class="analytics-empty">
+                    <h4>Avaliação não encontrada</h4>
+                    <p>Selecione outra avaliação ou recarregue os dados.</p>
+                </div>
+            `;
+            if (exportButton) {
+                exportButton.disabled = true;
+            }
+            return;
+        }
+
+        if (exportButton) {
+            exportButton.disabled = false;
+        }
+
+        const metrics = this.extractEvaluationScore(evaluation);
+        const evaluationDate = this.parseEvaluationDate(evaluation);
+        const formattedDate = evaluationDate ? evaluationDate.toLocaleDateString('pt-BR') : (evaluation.patientInfo?.evaluationDate || 'N/A');
+        const patientName = evaluation.patientInfo?.name || 'Paciente não informado';
+        const evaluatorName = evaluation.evaluatorInfo?.name || evaluation.patientInfo?.evaluatorName || 'Não informado';
+        const sourceLabel = this.formatEvaluationSource(evaluation);
+        const answeredQuestions = this.countAnsweredQuestions(evaluation);
+        const totalQuestions = 149;
+        const averagePercent = metrics.maxScore > 0 ? (metrics.totalScore / metrics.maxScore) * 100 : 0;
+        const isDuplicate = this.currentDuplicateIds?.has(this.selectedEvaluationId);
+
+        const duplicateBanner = isDuplicate ? `
+            <div class="analytics-warning">
+                <div class="analytics-warning-content">
+                    <strong>⚠️ Esta avaliação possui duplicatas</strong>
+                    <p>Utilize o botão "Corrigir duplicados" para manter apenas o registro mais recente.</p>
+                </div>
+                <div class="analytics-warning-actions">
+                    <button class="btn-primary" onclick="window.terapeutaPanel.runDeduplication()">
+                        ♻️ Corrigir duplicados
+                    </button>
+                </div>
+            </div>
+        ` : '';
+
+        const summaryHtml = `
+            <div class="evaluation-detail-header">
+                <h3>${this.escapeHtml(patientName)}</h3>
+                <div class="evaluation-detail-meta">
+                    <span><strong>Data:</strong> ${this.escapeHtml(formattedDate)}</span>
+                    <span><strong>Avaliador:</strong> ${this.escapeHtml(evaluatorName)}</span>
+                    <span><strong>Origem:</strong> ${this.escapeHtml(sourceLabel)}</span>
+                </div>
+            </div>
+            ${duplicateBanner}
+            <div class="evaluation-detail-summary">
+                <h4>Resumo geral</h4>
+                <div class="summary-grid">
+                    <div class="summary-item">
+                        <span class="summary-label">Pontuação total</span>
+                        <span class="summary-value">${Math.round(metrics.totalScore || 0)} / ${metrics.maxScore}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Pontuação média (%)</span>
+                        <span class="summary-value">${this.formatPercentage(averagePercent)}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Perguntas respondidas</span>
+                        <span class="summary-value">${answeredQuestions}/${totalQuestions}</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">ID da avaliação</span>
+                        <span class="summary-value">${this.escapeHtml(this.selectedEvaluationId)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const questionsHtml = this.buildEvaluationQuestionsMarkup(evaluation);
+
+        container.innerHTML = summaryHtml + questionsHtml;
+    }
+
+    formatEvaluationOptionLabel(evaluation) {
+        const evaluationDate = this.parseEvaluationDate(evaluation);
+        const formattedDate = evaluationDate ? evaluationDate.toLocaleDateString('pt-BR') : (evaluation.patientInfo?.evaluationDate || 'Sem data');
+        const sourceText = evaluation.source === 'firebase' || evaluation.firebaseId ? 'Firebase' :
+            (evaluation.source === 'local' || evaluation.localOnly ? 'Local' : 'Origem desconhecida');
+        const sourceIcon = evaluation.source === 'firebase' || evaluation.firebaseId ? '☁️' :
+            (evaluation.source === 'local' || evaluation.localOnly ? '💾' : '•');
+        const metrics = this.extractEvaluationScore(evaluation);
+        const percent = metrics.maxScore > 0 ? (metrics.totalScore / metrics.maxScore) * 100 : 0;
+        const totalScore = Math.round(metrics.totalScore || 0);
+        return `${formattedDate} • ${sourceIcon} ${sourceText} • ${totalScore} pts (${this.formatPercentage(percent)})`;
+    }
+
+    formatEvaluationSource(evaluation) {
+        if (evaluation.source === 'firebase' || evaluation.firebaseId) {
+            return '☁️ Firebase';
+        }
+        if (evaluation.source === 'local' || evaluation.localOnly) {
+            return '💾 Local';
+        }
+        return '—';
+    }
+
+    exportSelectedEvaluation() {
+        if (!this.selectedEvaluationId) {
+            this.showNotification('Selecione uma avaliação para exportar.', 'warning');
+            return;
+        }
+
+        const evaluation = this.evaluationIndex.get(this.selectedEvaluationId);
+        if (!evaluation) {
+            this.showNotification('Avaliação não encontrada.', 'error');
+            return;
+        }
+
+        const descriptions = this.getQuestionDescriptions();
+        const responsesMap = this.mapResponsesByQuestion(evaluation);
+        const patientName = evaluation.patientInfo?.name || '';
+        const evaluatorName = evaluation.evaluatorInfo?.name || evaluation.patientInfo?.evaluatorName || '';
+        const evaluationDate = this.parseEvaluationDate(evaluation);
+        const formattedDate = evaluationDate ? evaluationDate.toLocaleDateString('pt-BR') : (evaluation.patientInfo?.evaluationDate || '');
+        const source = this.formatEvaluationSource(evaluation);
+
+        const csvEscape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+        let csvContent = 'data:text/csv;charset=utf-8,';
+        csvContent += 'Paciente,Avaliacao,Data,Avaliador,Questao,Descricao,Pontuacao,Origem\n';
+
+        for (let question = 1; question <= 149; question++) {
+            const entry = responsesMap.get(question);
+            const questionId = `q${question}`;
+            const description = entry?.question || descriptions[questionId] || `Questão ${question}`;
+            const score = entry && entry.score !== null && entry.score !== undefined ? entry.score : '';
+            csvContent += [
+                csvEscape(patientName),
+                csvEscape(this.selectedEvaluationId),
+                csvEscape(formattedDate),
+                csvEscape(evaluatorName),
+                question,
+                csvEscape(description),
+                score,
+                csvEscape(source)
+            ].join(',') + '\n';
+        }
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', `avaliacao_${patientName.replace(/\s+/g, '_')}_${this.selectedEvaluationId}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.showNotification('Avaliação exportada com sucesso.', 'success');
+    }
+
+    buildEvaluationQuestionsMarkup(evaluation) {
+        const categories = this.getCategoryStructure();
+        const descriptions = this.getQuestionDescriptions();
+        const responsesMap = this.mapResponsesByQuestion(evaluation);
+        let html = '<div class="evaluation-questions">';
+        let hasContent = false;
+
+        categories.forEach(category => {
+            const subgroupsHtml = category.subgroups.map(subgroup => {
+                const questions = [];
+                for (let num = subgroup.start; num <= subgroup.end; num++) {
+                    const response = responsesMap.get(num);
+                    const questionId = `q${num}`;
+                    const description = response?.question || descriptions[questionId] || `Questão ${num}`;
+                    const score = Number.isFinite(response?.score) ? response.score : null;
+                    questions.push({ num, description, score });
+                }
+
+                const total = questions.reduce((sum, item) => sum + (item.score ?? 0), 0);
+                const answered = questions.filter(item => item.score !== null).length;
+                const max = questions.length * 5;
+                const percentage = max > 0 ? Math.round((total / max) * 100) : 0;
+
+                return `
+                    <div class="evaluation-subgroup-card" style="border-left-color: ${category.color}; background: ${category.color}10;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                            <div>
+                                <strong>${this.escapeHtml(subgroup.name)}</strong>
+                                <small style="display:block; color: #718096;">${answered}/${questions.length} respondidas</small>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 22px; font-weight: 700; color: ${category.color};">${percentage}%</div>
+                                <div style="font-size: 12px; color: #4a5568;">${total}/${max} pontos</div>
+                            </div>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Questão</th>
+                                    <th>Descrição</th>
+                                    <th style="text-align:center;">Pontuação</th>
+                                    <th style="text-align:center;">Classificação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${questions.map(question => {
+                                    const scoreDisplay = question.score !== null ? `${question.score}/5` : '—';
+                                    const level = question.score !== null ? this.getScoreLevel(question.score) : null;
+                                    const badge = question.score !== null
+                                        ? `<span class="score-badge" style="background:${level.color}">${level.label}</span>`
+                                        : `<span class="score-badge" style="background:#a0aec0">Sem resposta</span>`;
+                                    return `
+                                        <tr>
+                                            <td style="font-weight:600;">Q${question.num}</td>
+                                            <td>${this.escapeHtml(question.description)}</td>
+                                            <td style="text-align:center; font-weight:600;">${scoreDisplay}</td>
+                                            <td style="text-align:center;">${badge}</td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }).join('');
+
+            if (subgroupsHtml.trim()) {
+                hasContent = true;
+                html += `
+                    <div class="evaluation-category-card" style="border-top: 3px solid ${category.color};">
+                        <h4 style="margin-top:0; color:${category.color};">${this.escapeHtml(category.name)}</h4>
+                        ${subgroupsHtml}
+                    </div>
+                `;
+            }
+        });
+
+        html += hasContent ? '</div>' : `
+            <div class="analytics-empty">
+                <h4>Nenhuma resposta registrada</h4>
+                <p>Não foram encontradas respostas para esta avaliação.</p>
+            </div>
+        `;
+
+        return html;
+    }
+
+    getCategoryStructure() {
+        return [
+            {
+                key: 'habilidades-comunicativas',
+                name: 'Habilidades Comunicativas',
+                color: '#667eea',
+                subgroups: [
+                    { name: 'Contato Visual', start: 1, end: 10 },
+                    { name: 'Comunicação Alternativa', start: 11, end: 20 },
+                    { name: 'Linguagem Expressiva', start: 21, end: 30 },
+                    { name: 'Linguagem Receptiva', start: 31, end: 40 }
+                ]
+            },
+            {
+                key: 'habilidades-sociais',
+                name: 'Habilidades Sociais',
+                color: '#4facfe',
+                subgroups: [
+                    { name: 'Expressão Facial', start: 41, end: 50 },
+                    { name: 'Imitação', start: 51, end: 60 },
+                    { name: 'Atenção Compartilhada', start: 61, end: 70 },
+                    { name: 'Brincar', start: 71, end: 80 }
+                ]
+            },
+            {
+                key: 'habilidades-funcionais',
+                name: 'Habilidades Funcionais',
+                color: '#ffb778',
+                subgroups: [
+                    { name: 'Auto Cuidado', start: 81, end: 89 },
+                    { name: 'Vestir-se', start: 90, end: 99 },
+                    { name: 'Uso do Banheiro', start: 100, end: 109 }
+                ]
+            },
+            {
+                key: 'habilidades-emocionais',
+                name: 'Habilidades Emocionais',
+                color: '#d299c2',
+                subgroups: [
+                    { name: 'Controle Inibitório', start: 110, end: 119 },
+                    { name: 'Flexibilidade', start: 120, end: 129 },
+                    { name: 'Resposta Emocional', start: 130, end: 139 },
+                    { name: 'Empatia', start: 140, end: 149 }
+                ]
+            }
+        ];
+    }
+
+    mapResponsesByQuestion(evaluation) {
+        const map = new Map();
+        const responses = evaluation.responses || {};
+
+        Object.entries(responses).forEach(([questionId, value]) => {
+            const questionNum = parseInt(questionId.replace(/\D/g, ''), 10);
+            if (!Number.isInteger(questionNum)) {
+                return;
+            }
+
+            let score = null;
+            let description = null;
+
+            if (value && typeof value === 'object') {
+                if (typeof value.score === 'number') {
+                    score = value.score;
+                } else if (typeof value.score === 'string') {
+                    const numericScore = parseFloat(value.score);
+                    if (!Number.isNaN(numericScore)) {
+                        score = numericScore;
+                    }
+                }
+                if (value.question) {
+                    description = value.question;
+                }
+            } else if (typeof value === 'number') {
+                score = value;
+            } else if (typeof value === 'string') {
+                const numericScore = parseFloat(value);
+                if (!Number.isNaN(numericScore)) {
+                    score = numericScore;
+                }
+            }
+
+            map.set(questionNum, {
+                score: Number.isFinite(score) ? score : null,
+                question: description || null
+            });
+        });
+
+        return map;
+    }
+
+    countAnsweredQuestions(evaluation) {
+        const responsesMap = this.mapResponsesByQuestion(evaluation);
+        let answered = 0;
+        responsesMap.forEach(entry => {
+            if (entry.score !== null && entry.score !== undefined) {
+                answered += 1;
+            }
+        });
+        return answered;
+    }
+
+    getQuestionDescriptions() {
+        if (this.questionDescriptionsCache) {
+            return this.questionDescriptionsCache;
+        }
+        if (window.reportsManager && typeof window.reportsManager.getQuestionDescriptions === 'function') {
+            this.questionDescriptionsCache = window.reportsManager.getQuestionDescriptions();
+            return this.questionDescriptionsCache;
+        }
+        const fallback = {};
+        for (let i = 1; i <= 149; i++) {
+            fallback[`q${i}`] = `Questão ${i}`;
+        }
+        this.questionDescriptionsCache = fallback;
+        return this.questionDescriptionsCache;
+    }
+
+    getScoreLevel(score) {
+        if (score >= 5) return { label: 'Excelente', color: '#2f855a' };
+        if (score >= 4) return { label: 'Bom', color: '#38a169' };
+        if (score >= 3) return { label: 'Regular', color: '#dd6b20' };
+        if (score >= 2) return { label: 'Baixo', color: '#ed8936' };
+        return { label: 'Muito baixo', color: '#e53e3e' };
     }
 
     updateAnalyticsResults(force = false) {
@@ -1270,6 +1854,7 @@ class TerapeutaPanelMelhorado {
 
         const duplicates = this.findDuplicateEvaluations(filtered);
         const duplicateIds = new Set(duplicates.map(item => item.id));
+        this.currentDuplicateIds = duplicateIds;
         const detailTable = this.renderAnalyticsDetailedTable(filtered, duplicateIds);
         const duplicateBanner = duplicates.length
             ? this.renderDuplicateBanner(duplicates)
@@ -1294,6 +1879,7 @@ class TerapeutaPanelMelhorado {
         `;
 
         this.updateAnalyticsSummary(orderedRows, filtered, metric, grouping);
+        this.renderSelectedEvaluationDetail();
     }
 
     filterEvaluationsForAnalytics(evaluations) {
@@ -1880,9 +2466,10 @@ class TerapeutaPanelMelhorado {
     findDuplicateEvaluations(evaluations) {
         const counter = new Map();
         evaluations.forEach(evaluation => {
-            const id = this.getEvaluationId(evaluation);
-            if (!id) return;
-            counter.set(id, (counter.get(id) || 0) + 1);
+            // Usar chave de comparação sem timestamp para detectar duplicatas
+            const comparisonKey = this.getEvaluationComparisonKey(evaluation);
+            if (!comparisonKey) return;
+            counter.set(comparisonKey, (counter.get(comparisonKey) || 0) + 1);
         });
 
         return Array.from(counter.entries())
@@ -1935,7 +2522,28 @@ class TerapeutaPanelMelhorado {
 
         const datePart = String(rawDate).split('T')[0];
 
-        return `${name}_${datePart}`;
+        // Incluir timestamp para manter compatibilidade com novo formato
+        const timestamp = evaluation.createdAt || evaluation.timestamp || new Date().toISOString();
+        const timestampHash = timestamp.replace(/[^0-9]/g, '').slice(0, 10);
+
+        return `${name}_${datePart}_${timestampHash}`;
+    }
+
+    getEvaluationComparisonKey(evaluation) {
+        // Retorna chave sem timestamp para detectar duplicatas
+        if (!evaluation) return null;
+
+        const name = (evaluation.patientInfo?.name || 'avaliacao')
+            .toLowerCase()
+            .replace(/\s+/g, '_')
+            .replace(/[^a-z0-9_]/g, '');
+
+        const rawDate = evaluation.patientInfo?.evaluationDate ||
+            evaluation.evaluationDate ||
+            (evaluation.createdAt ? new Date(evaluation.createdAt).toISOString().split('T')[0] : null) ||
+            new Date().toISOString().split('T')[0];
+
+        return `${name}_${rawDate}`;
     }
 
     escapeHtml(value) {
@@ -2521,6 +3129,32 @@ class TerapeutaPanelMelhorado {
         }
     }
 
+    async runDeduplication() {
+        console.log('♻️ Terapeuta: Correção de duplicados solicitada pelo usuário.');
+        if (this.firebaseManager.connectionStatus !== 'connected') {
+            this.showNotification('Conecte-se ao Firebase para corrigir duplicadas.', 'warning');
+            return;
+        }
+
+        this.showLoading(true);
+        this.showNotification('Iniciando correção de duplicatas...', 'info');
+
+        try {
+            const result = await this.firebaseManager.deduplicateEvaluations();
+            this.showNotification(
+                `Correção concluída: ${result.removed} duplicata(s) removida(s).`,
+                result.removed > 0 ? 'success' : 'info'
+            );
+            console.log('♻️ Terapeuta: Resultado da deduplicação manual', result);
+            await this.refreshData(true);
+        } catch (error) {
+            console.error('❌ Erro ao remover duplicadas:', error);
+            this.showNotification('Erro ao remover duplicadas: ' + error.message, 'error');
+        } finally {
+            this.showLoading(false);
+        }
+    }
+
     exportData() {
         const data = {
             evaluations: this.filteredEvaluations,
@@ -2528,7 +3162,7 @@ class TerapeutaPanelMelhorado {
             totalCount: this.filteredEvaluations.length,
             connectionStatus: this.firebaseManager.getConnectionStatus()
         };
-        
+
         const dataStr = JSON.stringify(data, null, 2);
         const dataBlob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(dataBlob);
@@ -2536,7 +3170,7 @@ class TerapeutaPanelMelhorado {
         link.href = url;
         link.download = `avaliações-export-${new Date().toISOString().split('T')[0]}.json`;
         link.click();
-        
+
         this.showNotification('Dados exportados com sucesso', 'success');
     }
 }
