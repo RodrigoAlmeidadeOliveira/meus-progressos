@@ -326,20 +326,11 @@
                                     <p>Selecione como deseja agrupar os dados e, se necessário, aplique filtros adicionais.</p>
                                 </div>
                             </div>
-                        </div>
-                    </section>
-                </section>
 
-                <section id="pdi-panel" class="workspace-panel" role="tabpanel">
-                    <section class="module-card pdi-card">
-                        <header class="module-card__header">
-                            <h3>🧠 Planejamento PDI</h3>
-                        </header>
-                        <div class="module-card__body">
                             <div class="analytics-detail-controls">
                                 <div class="detail-heading">
-                                    <h4>Selecionar avaliação</h4>
-                                    <p>Escolha um paciente e uma avaliação para gerar o plano de intervenção e revisar cada pergunta.</p>
+                                    <h4>Visualização por Avaliação</h4>
+                                    <p>Selecione um paciente e uma avaliação para ver todas as respostas e preparar o PDI.</p>
                                 </div>
                                 <div class="detail-grid">
                                     <div class="filter-group">
@@ -365,7 +356,49 @@
                             <div id="analytics-evaluation-detail" class="analytics-evaluation-detail">
                                 <div class="analytics-empty">
                                     <h4>Nenhuma avaliação selecionada</h4>
-                                    <p>Selecione um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
+                                    <p>Escolha um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <section id="pdi-panel" class="workspace-panel" role="tabpanel">
+                    <section class="module-card pdi-card">
+                        <header class="module-card__header">
+                            <h3>🧠 Planejamento PDI</h3>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="analytics-detail-controls">
+                                <div class="detail-heading">
+                                    <h4>Selecionar avaliação</h4>
+                                    <p>Escolha um paciente e uma avaliação para gerar o plano de intervenção e revisar cada pergunta.</p>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="filter-group">
+                                        <label for="pdi-detail-patient">Paciente:</label>
+                                        <select id="pdi-detail-patient">
+                                            <option value="">Selecione um paciente...</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="pdi-detail-evaluation">Avaliação:</label>
+                                        <select id="pdi-detail-evaluation" disabled>
+                                            <option value="">Selecione uma avaliação...</option>
+                                        </select>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <button type="button" id="pdi-export-evaluation" class="btn-secondary" disabled>
+                                            💾 Exportar avaliação
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="pdi-evaluation-detail" class="analytics-evaluation-detail">
+                                <div class="analytics-empty">
+                                    <h4>Nenhuma avaliação selecionada</h4>
+                                    <p>Selecione um paciente e uma avaliação para gerar e ajustar o PDI.</p>
                                 </div>
                             </div>
                         </div>

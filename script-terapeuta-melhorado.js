@@ -708,6 +708,7 @@ class TerapeutaPanelMelhorado {
         this.currentPdiResults = [];
         this.currentPdiEvaluation = null;
         this.pdiControls = null;
+        this.pdiSelectors = null;
         this.runDeduplication = this.runDeduplication.bind(this);
 
         this.init();
@@ -718,6 +719,7 @@ class TerapeutaPanelMelhorado {
         
         this.setupEventListeners();
         this.setupAnalyticsControls();
+        this.setupPdiSelectors();
         this.setupConnectionMonitor();
         this.setupAutoRefresh();
         this.initializeReportsManager();
@@ -808,6 +810,32 @@ class TerapeutaPanelMelhorado {
             deduplicateButton.addEventListener('click', () => {
                 this.runDeduplication();
             });
+        }
+    }
+
+    setupPdiSelectors() {
+        const patientSelect = document.getElementById('pdi-detail-patient');
+        const evaluationSelect = document.getElementById('pdi-detail-evaluation');
+        const exportButton = document.getElementById('pdi-export-evaluation');
+        const container = document.getElementById('pdi-evaluation-detail');
+
+        if (!patientSelect || !evaluationSelect || !container) {
+            this.pdiSelectors = null;
+            return;
+        }
+
+        this.pdiSelectors = {
+            patient: patientSelect,
+            evaluation: evaluationSelect,
+            exportButton,
+            container
+        };
+
+        patientSelect.addEventListener('change', (event) => this.handleDetailPatientChange(event, 'pdi'));
+        evaluationSelect.addEventListener('change', (event) => this.handleDetailEvaluationChange(event, 'pdi'));
+
+        if (exportButton) {
+            exportButton.addEventListener('click', () => this.exportSelectedEvaluation());
         }
     }
 
@@ -1176,22 +1204,32 @@ class TerapeutaPanelMelhorado {
         });
     }
 
-    renderSelectedEvaluationDetail() {
-        const container = this.analyticsControls?.evaluationDetailContainer;
-        const exportButton = this.analyticsControls?.viewEvaluation;
+    renderSelectedEvaluationDetail(context = 'analytics') {
+        const isPdiContext = context === 'pdi';
+        const container = isPdiContext
+            ? this.pdiSelectors?.container
+            : this.analyticsControls?.evaluationDetailContainer;
+        const exportButton = isPdiContext
+            ? this.pdiSelectors?.exportButton
+            : this.analyticsControls?.viewEvaluation;
+
         if (!container) {
             return;
         }
 
-        this.currentPdiEvaluation = null;
-        this.currentPdiResults = [];
-        this.pdiControls = null;
+        if (isPdiContext) {
+            this.currentPdiEvaluation = null;
+            this.currentPdiResults = [];
+            this.pdiControls = null;
+        }
 
         if (!this.selectedEvaluationId) {
             container.innerHTML = `
                 <div class="analytics-empty">
                     <h4>Nenhuma avaliação selecionada</h4>
-                    <p>Escolha um paciente e uma avaliação para visualizar os detalhes.</p>
+                    <p>${isPdiContext
+                        ? 'Escolha um paciente e uma avaliação para gerar o PDI.'
+                        : 'Escolha um paciente e uma avaliação para visualizar os detalhes.'}</p>
                 </div>
             `;
             if (exportButton) {
@@ -1276,12 +1314,14 @@ class TerapeutaPanelMelhorado {
             </div>
         `;
 
-        const pdiPanelHtml = this.buildPdiPanelHtml();
+        const pdiPanelHtml = isPdiContext ? this.buildPdiPanelHtml() : '';
         const questionsHtml = this.buildEvaluationQuestionsMarkup(evaluation);
 
         container.innerHTML = summaryHtml + pdiPanelHtml + questionsHtml;
 
-        this.setupPdiControls(evaluation);
+        if (isPdiContext) {
+            this.setupPdiControls(evaluation, container);
+        }
     }
 
     buildPdiPanelHtml() {
@@ -1289,7 +1329,7 @@ class TerapeutaPanelMelhorado {
             <div class="pdi-panel">
                 <div class="pdi-panel-header">
                     <h4>Plano de Desenvolvimento de Intervenção (PDI)</h4>
-                    <p>Selecione as respostas que precisam de intervenção e gere um plano personalizado.</p>
+                    <p>Selecione as respostas que precisam de intervenção; o plano é atualizado automaticamente.</p>
                 </div>
                 <div class="pdi-controls">
                     <div class="pdi-control">
@@ -1339,35 +1379,31 @@ class TerapeutaPanelMelhorado {
                         <small class="control-hint">Será habilitado após escolher um grupo. Pode selecionar mais de um.</small>
                     </div>
                     <div class="pdi-control pdi-actions">
-                        <button type="button" id="pdi-generate" class="btn-primary">Gerar PDI</button>
                         <button type="button" id="pdi-export" class="btn-secondary" disabled>Exportar CSV</button>
+                        <small class="control-hint">Os filtros acima atualizam o plano automaticamente.</small>
                     </div>
                 </div>
                 <div id="pdi-results" class="pdi-results">
                     <div class="analytics-empty">
                         <h4>Configure os filtros para gerar o PDI</h4>
-                        <p>Escolha as pontuações, grupos e subgrupos que deseja trabalhar. As sugestões aparecerão aqui.</p>
+                        <p>Escolha as pontuações, grupos e subgrupos que deseja trabalhar. As sugestões aparecerão automaticamente aqui.</p>
                     </div>
                 </div>
             </div>
         `;
     }
 
-    setupPdiControls(evaluation) {
-        if (!this.analyticsControls) return;
+    setupPdiControls(evaluation, container) {
+        if (!container) return;
 
-        const detailContainer = this.analyticsControls.evaluationDetailContainer;
-        if (!detailContainer) return;
-
-        const scoreInputs = Array.from(detailContainer.querySelectorAll('input[name="pdi-score"]'));
-        const groupSelect = detailContainer.querySelector('#pdi-group-select');
-        const subgroupSelect = detailContainer.querySelector('#pdi-subgroup-select');
-        const generateButton = detailContainer.querySelector('#pdi-generate');
-        const exportButton = detailContainer.querySelector('#pdi-export');
-        const resultsContainer = detailContainer.querySelector('#pdi-results');
-        const quickLowButton = detailContainer.querySelector('#pdi-select-low');
-        const quickAllGroupsButton = detailContainer.querySelector('#pdi-select-all-groups');
-        const clearFiltersButton = detailContainer.querySelector('#pdi-clear-filters');
+        const scoreInputs = Array.from(container.querySelectorAll('input[name="pdi-score"]'));
+        const groupSelect = container.querySelector('#pdi-group-select');
+        const subgroupSelect = container.querySelector('#pdi-subgroup-select');
+        const exportButton = container.querySelector('#pdi-export');
+        const resultsContainer = container.querySelector('#pdi-results');
+        const quickLowButton = container.querySelector('#pdi-select-low');
+        const quickAllGroupsButton = container.querySelector('#pdi-select-all-groups');
+        const clearFiltersButton = container.querySelector('#pdi-clear-filters');
 
         this.currentPdiEvaluation = evaluation;
         this.currentPdiResults = [];
@@ -1375,7 +1411,6 @@ class TerapeutaPanelMelhorado {
             scoreInputs,
             groupSelect,
             subgroupSelect,
-            generateButton,
             exportButton,
             resultsContainer,
             quickLowButton,
@@ -1413,10 +1448,6 @@ class TerapeutaPanelMelhorado {
             subgroupSelect.addEventListener('change', regenerate);
         }
 
-        if (generateButton) {
-            generateButton.addEventListener('click', regenerate);
-        }
-
         if (exportButton) {
             exportButton.addEventListener('click', (event) => {
                 event.preventDefault();
@@ -1447,7 +1478,7 @@ class TerapeutaPanelMelhorado {
                 resultsContainer.innerHTML = `
                     <div class="analytics-empty">
                         <h4>Filtros limpos</h4>
-                        <p>Selecione as combinações desejadas e clique em "Gerar PDI".</p>
+                        <p>Selecione as combinações desejadas para atualizar o plano automaticamente.</p>
                     </div>
                 `;
             });
@@ -1592,7 +1623,7 @@ class TerapeutaPanelMelhorado {
             resultsContainer.innerHTML = `
                 <div class="analytics-empty">
                     <h4>Nenhuma pontuação selecionada</h4>
-                    <p>Escolha ao menos uma pontuação (1 a 5) para gerar o PDI.</p>
+                    <p>Escolha ao menos uma pontuação (1 a 5) para visualizar sugestões no PDI.</p>
                 </div>
             `;
             this.currentPdiResults = [];

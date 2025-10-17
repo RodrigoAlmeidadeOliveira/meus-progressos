@@ -11,6 +11,27 @@ export function attachAnalyticsModule(proto) {
     });
 }
 
+function getDetailContext(context = 'analytics') {
+    if (context === 'pdi') {
+        const selectors = this.pdiSelectors;
+        if (!selectors) return null;
+        return {
+            patientSelect: selectors.patient || null,
+            evaluationSelect: selectors.evaluation || null,
+            exportButton: selectors.exportButton || selectors.exportEvaluation || null,
+            container: selectors.container || null
+        };
+    }
+
+    if (!this.analyticsControls) return null;
+    return {
+        patientSelect: this.analyticsControls.detailPatient || null,
+        evaluationSelect: this.analyticsControls.detailEvaluation || null,
+        exportButton: this.analyticsControls.viewEvaluation || null,
+        container: this.analyticsControls.evaluationDetailContainer || null
+    };
+}
+
 function setupAnalyticsControls() {
     const panel = document.getElementById('analytics-menu');
     if (!panel) {
@@ -74,18 +95,29 @@ function setupAnalyticsControls() {
             if (this.analyticsControls.viewEvaluation) {
                 this.analyticsControls.viewEvaluation.disabled = true;
             }
+            if (this.pdiSelectors?.patient) {
+                this.pdiSelectors.patient.value = '';
+            }
+            if (this.pdiSelectors?.evaluation) {
+                this.pdiSelectors.evaluation.innerHTML = '<option value=\"\">Selecione uma avaliação...</option>';
+                this.pdiSelectors.evaluation.disabled = true;
+            }
+            if (this.pdiSelectors?.exportButton) {
+                this.pdiSelectors.exportButton.disabled = true;
+            }
             this.selectedEvaluationId = null;
-            this.renderSelectedEvaluationDetail();
+            this.renderSelectedEvaluationDetail('analytics');
+            this.renderSelectedEvaluationDetail('pdi');
             this.updateAnalyticsResults(true);
         });
     }
 
     if (this.analyticsControls.detailPatient) {
-        this.analyticsControls.detailPatient.addEventListener('change', (event) => this.handleDetailPatientChange(event));
+        this.analyticsControls.detailPatient.addEventListener('change', (event) => this.handleDetailPatientChange(event, 'analytics'));
     }
 
     if (this.analyticsControls.detailEvaluation) {
-        this.analyticsControls.detailEvaluation.addEventListener('change', (event) => this.handleDetailEvaluationChange(event));
+        this.analyticsControls.detailEvaluation.addEventListener('change', (event) => this.handleDetailEvaluationChange(event, 'analytics'));
     }
 
     if (this.analyticsControls.viewEvaluation) {
@@ -147,15 +179,19 @@ function populateAnalyticsFilters(evaluations) {
 }
 
 function populateDetailSelectors() {
-    if (!this.analyticsControls) return;
+    populateDetailSelectorsForContext.call(this, 'analytics');
+    populateDetailSelectorsForContext.call(this, 'pdi');
+}
 
-    const patientSelect = this.analyticsControls.detailPatient;
-    const evaluationSelect = this.analyticsControls.detailEvaluation;
-    const exportButton = this.analyticsControls.viewEvaluation;
-
-    if (!patientSelect || !evaluationSelect) {
+function populateDetailSelectorsForContext(context) {
+    const selectors = getDetailContext.call(this, context);
+    if (!selectors || !selectors.patientSelect || !selectors.evaluationSelect) {
         return;
     }
+
+    const patientSelect = selectors.patientSelect;
+    const evaluationSelect = selectors.evaluationSelect;
+    const exportButton = selectors.exportButton;
 
     const existingSelection = patientSelect.value;
     const patients = this.sortedPatients || [];
@@ -172,29 +208,33 @@ function populateDetailSelectors() {
         patientSelect.value = '';
     }
 
-    this.populateEvaluationOptionsForPatient(validSelection || null);
+    this.populateEvaluationOptionsForPatient(validSelection || null, context);
 
     if (exportButton) {
         exportButton.disabled = !this.selectedEvaluationId;
     }
 }
 
-function populateEvaluationOptionsForPatient(patientKey) {
-    const evaluationSelect = this.analyticsControls?.detailEvaluation;
-    const exportButton = this.analyticsControls?.viewEvaluation;
-
-    if (!evaluationSelect) {
+function populateEvaluationOptionsForPatient(patientKey, context = 'analytics') {
+    const selectors = getDetailContext.call(this, context);
+    if (!selectors || !selectors.evaluationSelect) {
         return;
     }
+
+    const evaluationSelect = selectors.evaluationSelect;
+    const exportButton = selectors.exportButton;
 
     if (!patientKey || !this.evaluationsByPatient.has(patientKey)) {
         evaluationSelect.innerHTML = '<option value="">Selecione uma avaliação...</option>';
         evaluationSelect.disabled = true;
-        this.selectedEvaluationId = null;
         if (exportButton) {
             exportButton.disabled = true;
         }
-        this.renderSelectedEvaluationDetail();
+        if (context === 'pdi') {
+            this.renderSelectedEvaluationDetail('pdi');
+        } else {
+            this.renderSelectedEvaluationDetail('analytics');
+        }
         return;
     }
 
@@ -212,31 +252,54 @@ function populateEvaluationOptionsForPatient(patientKey) {
 
     if (!this.selectedEvaluationId || !entry.evaluations.some(ev => ev.id === this.selectedEvaluationId)) {
         this.selectedEvaluationId = entry.evaluations.length > 0 ? entry.evaluations[0].id : null;
-        if (this.selectedEvaluationId) {
-            evaluationSelect.value = this.selectedEvaluationId;
-        }
+    }
+
+    if (this.selectedEvaluationId) {
+        evaluationSelect.value = this.selectedEvaluationId;
     }
 
     if (exportButton) {
         exportButton.disabled = !this.selectedEvaluationId;
     }
 
-    this.renderSelectedEvaluationDetail();
+    if (context === 'pdi') {
+        this.renderSelectedEvaluationDetail('pdi');
+    } else {
+        this.renderSelectedEvaluationDetail('analytics');
+    }
 }
 
-function handleDetailPatientChange(event) {
+function handleDetailPatientChange(event, context = 'analytics') {
     const patientKey = event.target.value || null;
     this.selectedEvaluationId = null;
-    this.populateEvaluationOptionsForPatient(patientKey);
+
+    const otherContext = context === 'analytics' ? 'pdi' : 'analytics';
+    const otherSelectors = getDetailContext.call(this, otherContext);
+    if (otherSelectors?.patientSelect) {
+        otherSelectors.patientSelect.value = patientKey || '';
+    }
+
+    this.populateEvaluationOptionsForPatient(patientKey, context);
+    this.populateEvaluationOptionsForPatient(patientKey, otherContext);
 }
 
-function handleDetailEvaluationChange(event) {
+function handleDetailEvaluationChange(event, context = 'analytics') {
     const evaluationId = event.target.value || null;
     this.selectedEvaluationId = evaluationId || null;
-    if (this.analyticsControls?.viewEvaluation) {
-        this.analyticsControls.viewEvaluation.disabled = !this.selectedEvaluationId;
-    }
-    this.renderSelectedEvaluationDetail();
+
+    const contexts = ['analytics', 'pdi'];
+    contexts.forEach(ctx => {
+        const selectors = getDetailContext.call(this, ctx);
+        if (selectors?.evaluationSelect && selectors.evaluationSelect !== event.target) {
+            selectors.evaluationSelect.value = this.selectedEvaluationId || '';
+        }
+        if (selectors?.exportButton) {
+            selectors.exportButton.disabled = !this.selectedEvaluationId;
+        }
+    });
+
+    this.renderSelectedEvaluationDetail('analytics');
+    this.renderSelectedEvaluationDetail('pdi');
 }
 
 function exportSelectedEvaluation() {
@@ -352,7 +415,7 @@ function updateAnalyticsResults(force = false) {
                 <span class="analytics-metric-badge">${this.escapeHtml(detailedTable.countLabel)}</span>
             </div>
             <div class="analytics-summary-info">
-                <p>Use os filtros para refinar o recorte e clique em “Gerar PDI” no painel ao lado para transformar essas respostas em um plano de intervenção.</p>
+                <p>Use os filtros para refinar o recorte e, quando necessário, utilize a aba de PDI para transformar essas respostas em um plano de intervenção.</p>
             </div>
             ${detailedTable.html}
         </div>
@@ -367,7 +430,7 @@ function updateAnalyticsResults(force = false) {
             </div>
             <div class="analytics-summary-info">
                 <p><strong>${totalEvaluations}</strong> avaliação(ões) atendem ao filtro atual, distribuídas entre <strong>${totalPatients}</strong> paciente(s).</p>
-                <p>Use o seletor de paciente/avaliação ao lado para explorar cada formulário completo ou gere um PDI com os filtros desejados.</p>
+                <p>Use o seletor de paciente/avaliação para explorar cada formulário completo ou configure o PDI na aba dedicada.</p>
             </div>
         </div>
         ${summaryTableHtml}
@@ -375,5 +438,6 @@ function updateAnalyticsResults(force = false) {
     `;
 
     this.updateAnalyticsSummary(orderedRows, filtered, metric, grouping);
-    this.renderSelectedEvaluationDetail();
+    this.renderSelectedEvaluationDetail('analytics');
+    this.renderSelectedEvaluationDetail('pdi');
 }
