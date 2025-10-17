@@ -56,7 +56,7 @@
                 <div class="header-actions">
                     <a href="pais.html" class="btn-secondary">📝 Formulário para Pais</a>
                     <a href="index.html" class="btn-secondary">🏠 Meus Progressos</a>
-                    <button type="button" class="btn-secondary" data-trigger-nav="analytics-panel">📊 Consulta Analítica e PDI</button>
+                    <button type="button" class="btn-secondary" data-trigger-nav="analytics-panel">📊 Consulta Analítica</button>
                 </div>
             </div>
         </header>
@@ -119,7 +119,8 @@
                         </ul>
                         <div class="insight-actions">
                             <button type="button" class="link-button" data-trigger-nav="dashboard-panel" data-focus-target="#patients-list">👥 Acessar pacientes</button>
-                            <button type="button" class="link-button" data-trigger-nav="analytics-panel">📊 Consulta analítica e PDI</button>
+                            <button type="button" class="link-button" data-trigger-nav="analytics-panel">📊 Consulta analítica</button>
+                            <button type="button" class="link-button" data-trigger-nav="pdi-panel">🧠 Gerar PDI</button>
                         </div>
                     </div>
                 </section>
@@ -128,7 +129,8 @@
             <main class="workspace-main">
                 <nav class="workspace-nav" id="workspace-nav" role="tablist">
                     <button type="button" class="nav-link is-active" data-panel="dashboard-panel">Dashboard</button>
-                    <button type="button" class="nav-link" data-panel="analytics-panel">Consulta Analítica e PDI</button>
+                    <button type="button" class="nav-link" data-panel="analytics-panel">Consulta Analítica</button>
+                    <button type="button" class="nav-link" data-panel="pdi-panel">PDI</button>
                     <button type="button" class="nav-link" data-panel="reports-panel">Relatórios</button>
                 </nav>
 
@@ -357,11 +359,27 @@
                                     <p>Escolha um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
                                 </div>
                             </div>
+                        </div>
+                    </section>
+                </section>
 
-                            <div class="pdi-section" style="margin-top: 40px; padding-top: 40px; border-top: 2px solid #e9ecef;">
+                <section id="pdi-panel" class="workspace-panel" role="tabpanel">
+                    <section class="module-card pdi-card pdi-section" id="pdi-menu">
+                        <header class="module-card__header pdi-header">
+                            <div class="module-card__title">
+                                <h3>🧠 PDI - Plano de Desenvolvimento Individual</h3>
+                                <p>Gere planos de intervenção personalizados baseados nas avaliações dos pacientes.</p>
+                            </div>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="pdi-intro">
+                                <p>💡 <strong>Como funciona:</strong> Selecione um paciente e uma avaliação específica. O sistema analisará as respostas e gerará automaticamente um plano de desenvolvimento com objetivos e estratégias de intervenção.</p>
+                            </div>
+
+                            <div class="pdi-selection">
                                 <div class="detail-heading">
-                                    <h4>🧠 Gerar PDI (Plano de Desenvolvimento Individual)</h4>
-                                    <p>Selecione um paciente e uma avaliação para gerar o plano de intervenção baseado nas respostas.</p>
+                                    <h4>Seleção de Paciente e Avaliação</h4>
+                                    <p>Escolha o paciente e a avaliação base para o PDI.</p>
                                 </div>
                                 <div class="detail-grid">
                                     <div class="filter-group">
@@ -380,14 +398,17 @@
                                         <button type="button" id="pdi-export-evaluation" class="btn-secondary" disabled>
                                             💾 Exportar avaliação
                                         </button>
+                                        <button type="button" id="pdi-generate" class="btn-primary" disabled>
+                                            ✨ Gerar PDI
+                                        </button>
                                     </div>
                                 </div>
+                            </div>
 
-                                <div id="pdi-evaluation-detail" class="analytics-evaluation-detail">
-                                    <div class="analytics-empty">
-                                        <h4>Nenhuma avaliação selecionada</h4>
-                                        <p>Selecione um paciente e uma avaliação para gerar e ajustar o PDI.</p>
-                                    </div>
+                            <div id="pdi-evaluation-detail" class="analytics-evaluation-detail">
+                                <div class="analytics-empty">
+                                    <h4>Nenhuma avaliação selecionada</h4>
+                                    <p>Selecione um paciente e uma avaliação para visualizar os detalhes e gerar o PDI.</p>
                                 </div>
                             </div>
                         </div>

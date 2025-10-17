@@ -1,3 +1,12 @@
+/**
+ * Analytics Module - Consulta Analítica
+ *
+ * Design Patterns:
+ * - Single Responsibility Principle (SRP): Responsável apenas por consultas analíticas
+ * - Observer Pattern: Publica eventos quando dados mudam
+ * - DRY: Funções reutilizáveis compartilhadas com PDI
+ */
+
 export function attachAnalyticsModule(proto) {
     Object.assign(proto, {
         setupAnalyticsControls,
@@ -281,6 +290,11 @@ function handleDetailPatientChange(event, context = 'analytics') {
 
     this.populateEvaluationOptionsForPatient(patientKey, context);
     this.populateEvaluationOptionsForPatient(patientKey, otherContext);
+
+    // Observer Pattern: Publica evento de seleção de paciente
+    if (this.publishEvent) {
+        this.publishEvent('PATIENT_SELECTED', { patientKey, context });
+    }
 }
 
 function handleDetailEvaluationChange(event, context = 'analytics') {
@@ -300,6 +314,11 @@ function handleDetailEvaluationChange(event, context = 'analytics') {
 
     this.renderSelectedEvaluationDetail('analytics');
     this.renderSelectedEvaluationDetail('pdi');
+
+    // Observer Pattern: Publica evento de seleção de avaliação
+    if (this.publishEvent) {
+        this.publishEvent('EVALUATION_SELECTED', { evaluationId, context });
+    }
 }
 
 function exportSelectedEvaluation() {
