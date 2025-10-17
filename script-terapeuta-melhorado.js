@@ -1,7 +1,8 @@
-import { attachAnalyticsModule } from './modules/analytics-module.js?v=3.3';
-import { attachPDIModule } from './modules/pdi-module.js?v=3.3';
-import { attachEventBusModule } from './modules/event-bus.js?v=3.3';
-import { ui } from './modules/ui.js?v=3.3';
+import { attachAnalyticsModule } from './modules/analytics-module.js?v=3.4';
+import { attachPDIModule } from './modules/pdi-module.js?v=3.4';
+import { attachEventBusModule } from './modules/event-bus.js?v=3.4';
+import { PerformanceOptimizer } from './modules/performance-optimizer.js?v=3.4';
+import { ui } from './modules/ui.js?v=3.4';
 
 // Script melhorado para o Painel do Terapeuta
 // Sistema robusto com verificação de conexão e backup de dados
@@ -15,6 +16,7 @@ class FirebaseManagerTerapeutaMelhorado {
         this.initialized = false;
         this.connectionStatus = 'checking';
         this.statusCallbacks = [];
+        this.performanceOptimizer = new PerformanceOptimizer();
         this.initFirebase();
     }
 
@@ -82,16 +84,29 @@ class FirebaseManagerTerapeutaMelhorado {
         this.statusCallbacks.forEach(cb => cb(status));
     }
 
-    async getAllEvaluations() {
-        console.log('🔍 Terapeuta: getAllEvaluations - Status:', this.connectionStatus);
+    async getAllEvaluations(forceRefresh = false) {
+        console.log('🔍 Terapeuta: getAllEvaluations - Status:', this.connectionStatus, '- ForceRefresh:', forceRefresh);
+
+        const cacheKey = 'all_evaluations';
+
+        // 1. Tentar cache IndexedDB primeiro (se não for refresh forçado)
+        if (!forceRefresh) {
+            const cachedData = await this.performanceOptimizer.getFromIndexedDB(cacheKey);
+            if (cachedData && cachedData.length > 0) {
+                console.log(`⚡ Performance: Usando ${cachedData.length} avaliações do cache IndexedDB`);
+                return cachedData;
+            }
+        }
 
         let cloudData = [];
         let localData = [];
 
-        // Tentar buscar dados do Firebase primeiro (sem depender do connectionStatus)
+        // 2. Buscar dados do Firebase
         if (this.initialized && this.db) {
             try {
                 console.log('☁️ Terapeuta: Buscando dados do Firebase...');
+                const startTime = performance.now();
+
                 const { getDocs, collection } = await import('https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js');
 
                 // Buscar TODOS os documentos sem orderBy para pegar também os que não têm createdAt
@@ -113,7 +128,8 @@ class FirebaseManagerTerapeutaMelhorado {
                     return dateB - dateA;
                 });
 
-                console.log(`✅ Terapeuta: ${cloudData.length} avaliações do Firebase`);
+                const endTime = performance.now();
+                console.log(`✅ Terapeuta: ${cloudData.length} avaliações do Firebase em ${Math.round(endTime - startTime)}ms`);
 
                 // Marcar como conectado se conseguimos buscar dados
                 if (this.connectionStatus !== 'connected') {
@@ -127,20 +143,20 @@ class FirebaseManagerTerapeutaMelhorado {
             }
         }
 
-        // Sempre buscar dados locais como backup
+        // 3. Sempre buscar dados locais como backup
         localData = this.getLocalStorageAsArray();
         console.log(`💾 Terapeuta: ${localData.length} avaliações locais`);
 
-        // Mesclar dados, priorizando Firebase mas mantendo dados únicos do local
+        // 4. Mesclar dados, priorizando Firebase mas mantendo dados únicos do local
         const allData = [...cloudData];
-        
+
         // Adicionar dados locais que não estão no Firebase
         localData.forEach(localItem => {
             const existsInFirebase = cloudData.some(cloudItem => {
                 return cloudItem.patientInfo?.name === localItem.patientInfo?.name &&
                        cloudItem.patientInfo?.evaluationDate === localItem.patientInfo?.evaluationDate;
             });
-            
+
             if (!existsInFirebase) {
                 allData.push({
                     ...localItem,
@@ -151,6 +167,13 @@ class FirebaseManagerTerapeutaMelhorado {
         });
 
         console.log(`📊 Terapeuta: Total consolidado: ${allData.length} avaliações`);
+
+        // 5. Salvar no cache IndexedDB para próximas cargas
+        if (allData.length > 0) {
+            console.log('💾 Performance: Salvando dados no cache IndexedDB...');
+            await this.performanceOptimizer.saveToIndexedDB(cacheKey, allData);
+        }
+
         return allData;
     }
 
@@ -949,34 +972,35 @@ class TerapeutaPanelMelhorado {
         }
     }
 
-    async refreshData(silent = false) {
+    async refreshData(silent = false, forceRefresh = true) {
         if (!silent) {
             console.log('🔄 Terapeuta: Atualizando dados...');
             this.showLoading(true);
         }
-        
+
         try {
-            const evaluations = await this.firebaseManager.getAllEvaluations();
+            // Forçar refresh do Firebase, ignorando cache
+            const evaluations = await this.firebaseManager.getAllEvaluations(forceRefresh);
             this.filteredEvaluations = evaluations;
             this.indexEvaluations(evaluations);
-            
+
             this.updateStatistics(evaluations);
             this.populateEvaluationsList(evaluations);
             this.populateAnalyticsFilters(evaluations);
             this.updateAnalyticsResults();
             this.updateLastSyncTime();
             this.updateQuickInsights(evaluations);
-            
+
             // Atualizar sistema de relatórios apenas se os dados mudaram
-            if (window.reportsManager && (!this.lastReportDataUpdate || 
+            if (window.reportsManager && (!this.lastReportDataUpdate ||
                 JSON.stringify(evaluations) !== JSON.stringify(this.lastReportDataUpdate))) {
                 console.log('📊 Atualizando dados dos relatórios...');
                 window.reportsManager.setData(evaluations);
                 this.lastReportDataUpdate = JSON.parse(JSON.stringify(evaluations));
             }
-            
+
             if (!silent) {
-                this.showNotification('Dados atualizados', 'success');
+                this.showNotification('Dados atualizados com sucesso', 'success');
             }
         } catch (error) {
             console.error('❌ Terapeuta: Erro ao atualizar:', error);
