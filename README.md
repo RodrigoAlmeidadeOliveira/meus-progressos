@@ -44,7 +44,37 @@ Plataforma completa para acompanhar o desenvolvimento e evolução das habilidad
 3. Importe o repositório
 4. Deploy automático
 
-### **4. Servidor Local (Para Rede Local)**
+### **4. Fly.io (GRATUITO) ⭐ NOVO**
+
+**Vantagens:** Plano gratuito generoso, auto-scaling, global CDN
+**Ideal para:** Aplicações profissionais com alta disponibilidade
+
+#### Deploy Rápido:
+```bash
+# Instalar CLI
+brew install flyctl  # macOS
+# ou: curl -L https://fly.io/install.sh | sh
+
+# Login
+flyctl auth login
+
+# Deploy (use o script incluído)
+./deploy.sh deploy
+
+# Ou manualmente
+flyctl launch
+```
+
+📖 **Documentação completa:** Veja `QUICKSTART_DEPLOY.md` e `DEPLOY_FLYIO.md`
+
+#### Características:
+- ✅ HTTPS automático
+- ✅ Auto-stop/start (economiza recursos)
+- ✅ Deploy global em múltiplas regiões
+- ✅ Plano gratuito: 3 VMs, 3GB storage, 160GB bandwidth
+- ✅ Monitoramento e logs integrados
+
+### **5. Servidor Local (Para Rede Local)**
 
 **Vantagens:** Controle total, sem dependência de internet
 **Ideal para:** Clínicas, consultórios, uso interno

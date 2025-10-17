@@ -1,0 +1,16 @@
+# Arquivos ignorados no deploy do Fly.io
+.git
+.github
+.vscode
+.idea
+.claude
+node_modules
+*.log
+.DS_Store
+test-*.html
+*-test.html
+servidor.py
+__pycache__
+*.md
+!README.md
+!DEPLOY_FLYIO.md

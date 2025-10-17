@@ -1,5 +1,24 @@
 {
+  "name": "meus-progressos",
+  "version": "1.0.0",
+  "description": "Sistema de Avaliação de Habilidades Comunicativas",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8080",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "keywords": [
+    "avaliação",
+    "habilidades",
+    "comunicação",
+    "terapia"
+  ],
+  "author": "Rodrigo Almeida de Oliveira",
+  "license": "MIT",
   "dependencies": {
     "firebase": "^12.1.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

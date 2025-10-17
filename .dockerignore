@@ -1,0 +1,53 @@
+# Git
+.git
+.gitignore
+.github
+
+# Node modules
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Arquivos de desenvolvimento
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Arquivos de documentação
+*.md
+!README.md
+
+# Logs
+*.log
+firebase-debug.log
+
+# Arquivos temporários
+.DS_Store
+Thumbs.db
+.env.local
+.env.development
+.env.test
+
+# Claude Code
+.claude
+
+# Arquivos de teste
+test-*.html
+*-test.html
+firebase-test.html
+firebase-local-test.html
+
+# Python (se houver)
+__pycache__
+*.py[cod]
+*.so
+.Python
+servidor.py
+
+# Outros
+.cache
+.tmp
+dist
+build
