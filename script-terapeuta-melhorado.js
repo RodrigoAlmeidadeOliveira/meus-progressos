@@ -1,5 +1,5 @@
-import { attachAnalyticsModule } from './modules/analytics-module.js?v=3.1';
-import { ui } from './modules/ui.js?v=3.1';
+import { attachAnalyticsModule } from './modules/analytics-module.js?v=3.2';
+import { ui } from './modules/ui.js?v=3.2';
 
 // Script melhorado para o Painel do Terapeuta
 // Sistema robusto com verificação de conexão e backup de dados
@@ -1389,11 +1389,12 @@ class TerapeutaPanelMelhorado {
         if (subgroupSelect) {
             this.populatePdiSubgroupOptions(subgroupSelect, this.getSelectedOptions(groupSelect));
         }
-        const regenerate = (event) => {
+        const regenerate = (event, triggerOverride) => {
             if (event) {
                 event.preventDefault();
             }
-            this.generatePdiPlan(evaluation);
+            const trigger = triggerOverride || (event?.type === 'click' ? 'manual' : (event ? event.type : 'auto'));
+            this.generatePdiPlan(evaluation, { trigger });
         };
 
         scoreInputs.forEach(input => {
@@ -1426,14 +1427,14 @@ class TerapeutaPanelMelhorado {
         if (quickLowButton) {
             quickLowButton.addEventListener('click', () => {
                 this.applyPdiQuickLowScores();
-                regenerate();
+                regenerate(null, 'manual');
             });
         }
 
         if (quickAllGroupsButton) {
             quickAllGroupsButton.addEventListener('click', () => {
                 this.applyPdiSelectAllGroups();
-                regenerate();
+                regenerate(null, 'manual');
             });
         }
 
@@ -1453,7 +1454,7 @@ class TerapeutaPanelMelhorado {
         }
 
         this.applyPdiDefaultFilters();
-        regenerate();
+        this.generatePdiPlan(evaluation, { trigger: 'auto' });
     }
 
     populatePdiGroupOptions(selectElement) {
@@ -1574,7 +1575,7 @@ class TerapeutaPanelMelhorado {
         this.showNotification('Filtros do PDI limpos. Configure novamente para gerar o plano.', 'info');
     }
 
-    generatePdiPlan(evaluation) {
+    generatePdiPlan(evaluation, options = {}) {
         if (!this.pdiControls) return;
 
         const { scoreInputs, groupSelect, subgroupSelect, resultsContainer, exportButton } = this.pdiControls;
@@ -1596,6 +1597,9 @@ class TerapeutaPanelMelhorado {
             `;
             this.currentPdiResults = [];
             if (exportButton) exportButton.disabled = true;
+            if (options.trigger === 'manual') {
+                this.showNotification('Selecione pelo menos uma pontuação antes de gerar o PDI.', 'warning');
+            }
             return;
         }
 
@@ -1673,6 +1677,14 @@ class TerapeutaPanelMelhorado {
             groups: selectedGroups,
             subgroups: selectedSubgroups
         });
+
+        if (options.trigger === 'manual') {
+            if (results.length > 0) {
+                this.showNotification(`${results.length} questão(ões) preparadas no PDI. Revise os cards abaixo.`, 'success');
+            } else {
+                this.showNotification('Nenhuma questão corresponde aos filtros atuais.', 'info');
+            }
+        }
     }
 
     renderPdiResults(results, filters) {
