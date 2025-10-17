@@ -46,394 +46,460 @@
     </script>
 </head>
 <body>
-    <div class="container">
+    <div class="container page-shell">
         <header class="therapist-header">
-            <h1>👨‍⚕️ Painel do Terapeuta</h1>
-            <h2>Acompanhe o desenvolvimento e evolução das habilidades comunicativas</h2>
-            <div class="header-actions">
-                <a href="pais.html" class="btn-secondary">📝 Formulário para Pais</a>
-                <a href="index.html" class="btn-secondary">🏠 Meus Progressos</a>
-                <a href="#analytics-menu" class="btn-secondary">📊 Consulta Analítica</a>
+            <div class="header-content">
+                <div>
+                    <h1>👨‍⚕️ Painel do Terapeuta</h1>
+                    <p>Acompanhe o desenvolvimento e evolução das habilidades comunicativas</p>
+                </div>
+                <div class="header-actions">
+                    <a href="pais.html" class="btn-secondary">📝 Formulário para Pais</a>
+                    <a href="index.html" class="btn-secondary">🏠 Meus Progressos</a>
+                    <button type="button" class="btn-secondary" data-trigger-nav="analytics-panel">📊 Consulta Analítica</button>
+                </div>
             </div>
         </header>
 
-        <!-- Dashboard Principal -->
-        <div class="dashboard">
-            <!-- Estatísticas Gerais -->
-            <div class="stats-section">
-                <h3>📊 Estatísticas Gerais</h3>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-number" id="total-patients">-</div>
-                        <div class="stat-label">Pacientes</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="total-evaluations">-</div>
-                        <div class="stat-label">Avaliações</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="last-evaluation">-</div>
-                        <div class="stat-label">Última Avaliação</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number" id="avg-score">-</div>
-                        <div class="stat-label">Pontuação Média</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filtros de Busca -->
-            <div class="filters-section">
-                <h3>🔍 Filtros de Busca</h3>
-                <div class="filters-grid">
-                    <div class="filter-group">
-                        <label for="patient-filter">Buscar Paciente:</label>
-                        <input type="text" id="patient-filter" placeholder="Nome do paciente...">
-                    </div>
-                    <div class="filter-group">
-                        <label for="date-from">Data Inicial:</label>
-                        <input type="date" id="date-from">
-                    </div>
-                    <div class="filter-group">
-                        <label for="date-to">Data Final:</label>
-                        <input type="date" id="date-to">
-                    </div>
-                    <div class="filter-group">
-                        <label for="evaluator-filter">Avaliador:</label>
-                        <select id="evaluator-filter">
-                            <option value="">Todos os avaliadores</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="filter-actions">
-                    <button type="button" id="apply-filters" class="btn-primary">🔍 Aplicar Filtros</button>
-                    <button type="button" id="clear-filters" class="btn-secondary">🗑️ Limpar</button>
-                    <button type="button" id="refresh-data" class="btn-secondary">🔄 Atualizar</button>
-                    <button type="button" id="deduplicate-data" class="btn-secondary">♻️ Corrigir Duplicadas</button>
-                </div>
-            </div>
-
-            <!-- Consulta Analítica -->
-            <div class="analytics-section" id="analytics-menu">
-                <div class="analytics-header">
-                    <div>
-                        <h3>📊 Consulta Analítica</h3>
-                        <p>Explore os dados consolidados das avaliações por paciente, avaliador ou áreas de habilidade.</p>
-                    </div>
-                    <div class="analytics-summary">
-                        <div class="summary-card">
-                            <span class="summary-value" id="analytics-total-selected">0</span>
-                            <span class="summary-label">Avaliações filtradas</span>
-                        </div>
-                        <div class="summary-card">
-                            <span class="summary-value" id="analytics-average-percent">0%</span>
-                            <span class="summary-label">Pontuação média</span>
-                        </div>
-                        <div class="summary-card">
-                            <span class="summary-value" id="analytics-best-group">-</span>
-                            <span class="summary-label">Destaque</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="analytics-filters">
-                    <div class="filter-group">
-                        <label for="analytics-grouping">Agrupar por:</label>
-                        <select id="analytics-grouping">
-                            <option value="patient">Paciente</option>
-                            <option value="evaluator">Avaliador</option>
-                            <option value="category">Categoria de habilidades</option>
-                            <option value="subgroup">Subgrupo de habilidades</option>
-                            <option value="month">Mês/Ano</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="analytics-metric">Ordenar por:</label>
-                        <select id="analytics-metric">
-                            <option value="averagePercent">Pontuação média (%)</option>
-                            <option value="averageScore">Pontuação média (total)</option>
-                            <option value="count">Número de avaliações</option>
-                            <option value="lastScore">Última pontuação (%)</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="analytics-patient">Filtrar paciente:</label>
-                        <select id="analytics-patient">
-                            <option value="">Todos os pacientes</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="analytics-evaluator">Filtrar avaliador:</label>
-                        <select id="analytics-evaluator">
-                            <option value="">Todos os avaliadores</option>
-                        </select>
-                    </div>
-                    <div class="filter-group">
-                        <label for="analytics-date-from">Data inicial:</label>
-                        <input type="date" id="analytics-date-from">
-                    </div>
-                    <div class="filter-group">
-                        <label for="analytics-date-to">Data final:</label>
-                        <input type="date" id="analytics-date-to">
-                    </div>
-                </div>
-
-                <div class="analytics-actions">
-                    <button type="button" id="analytics-clear" class="btn-secondary">🧹 Limpar filtros</button>
-                    <button type="button" id="analytics-run" class="btn-primary">📈 Gerar análise</button>
-                </div>
-
-                <div class="analytics-detail-controls">
-                    <div class="detail-heading">
-                        <h4>Visualização por Avaliação</h4>
-                        <p>Selecione um paciente e escolha uma avaliação específica para ver todas as 149 respostas.</p>
-                    </div>
-                    <div class="detail-grid">
-                        <div class="filter-group">
-                            <label for="analytics-detail-patient">Paciente:</label>
-                            <select id="analytics-detail-patient">
-                                <option value="">Selecione um paciente...</option>
-                            </select>
-                        </div>
-                        <div class="filter-group">
-                            <label for="analytics-detail-evaluation">Avaliação:</label>
-                            <select id="analytics-detail-evaluation" disabled>
-                                <option value="">Selecione uma avaliação...</option>
-                            </select>
-                        </div>
-                        <div class="detail-actions">
-                            <button type="button" id="analytics-export-evaluation" class="btn-secondary" disabled>
-                                💾 Exportar avaliação
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="analytics-evaluation-detail" class="analytics-evaluation-detail">
-                    <div class="analytics-empty">
-                        <h4>Nenhuma avaliação selecionada</h4>
-                        <p>Escolha um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
-                    </div>
-                </div>
-
-                <div class="analytics-results" id="analytics-results">
-                    <div class="analytics-empty">
-                        <h4>Comece uma análise</h4>
-                        <p>Selecione como deseja agrupar os dados e, se necessário, aplique filtros adicionais.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Lista de Pacientes -->
-            <div class="patients-section">
-                <h3>👥 Lista de Pacientes</h3>
-                <div id="patients-list" class="patients-grid">
-                    <div class="loading-message">
-                        🔄 Carregando dados dos pacientes...
-                    </div>
-                </div>
-            </div>
-
-            <!-- Detalhes do Paciente Selecionado -->
-            <div id="patient-details" class="patient-details" style="display: none;">
-                <div class="details-header">
-                    <h3 id="patient-name-title">Nome do Paciente</h3>
-                    <div class="details-actions">
-                        <button type="button" id="export-patient-data" class="btn-primary">📊 Exportar Dados</button>
-                        <button type="button" id="generate-report" class="btn-primary">📋 Gerar Relatório</button>
-                        <button type="button" id="close-details" class="btn-secondary">❌ Fechar</button>
-                    </div>
-                </div>
-
-                <!-- Informações do Paciente -->
-                <div class="patient-info-summary">
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Total de Avaliações:</label>
-                            <span id="patient-total-evaluations">-</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Primeira Avaliação:</label>
-                            <span id="patient-first-evaluation">-</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Última Avaliação:</label>
-                            <span id="patient-last-evaluation">-</span>
-                        </div>
-                        <div class="info-item">
-                            <label>Progresso Geral:</label>
-                            <span id="patient-progress">-</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Histórico de Avaliações -->
-                <div class="evaluations-history">
-                    <h4>📅 Histórico de Avaliações</h4>
-                    <div id="evaluations-timeline" class="timeline">
-                        <!-- Timeline será preenchida dinamicamente -->
-                    </div>
-                </div>
-
-                <!-- Gráficos de Evolução -->
-                <div class="charts-section">
-                    <h4>📈 Gráficos de Evolução</h4>
-                    <div class="charts-grid">
-                        <div class="chart-container">
-                            <h5>Progresso por Categoria</h5>
-                            <canvas id="categoryProgressChart"></canvas>
-                        </div>
-                        <div class="chart-container">
-                            <h5>Evolução Temporal</h5>
-                            <canvas id="temporalEvolutionChart"></canvas>
-                        </div>
-                        <div class="chart-container">
-                            <h5>Comparação de Grupos</h5>
-                            <div class="chart-controls">
-                                <select id="group-comparison-selector">
-                                    <option value="">Selecione um grupo...</option>
-                                </select>
+        <div class="workspace">
+            <aside class="workspace-sidebar">
+                <section class="module-card stats-card stats-section" id="module-stats">
+                    <header class="module-card__header">
+                        <h3>📊 Estatísticas Gerais</h3>
+                    </header>
+                    <div class="module-card__body">
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number" id="total-patients">-</div>
+                                <div class="stat-label">Pacientes</div>
                             </div>
-                            <canvas id="groupComparisonChart"></canvas>
-                        </div>
-                        <div class="chart-container">
-                            <h5>Radar de Habilidades</h5>
-                            <canvas id="skillsRadarChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Sistema de Relatórios Completo -->
-            <div id="reports-view" class="view-content">
-                <div class="reports-header">
-                    <h2>📊 Relatórios de Evolução</h2>
-                    <p>Análise detalhada do progresso dos pacientes com gráficos e exportação PDF</p>
-                </div>
-
-                <!-- Filtros de Relatórios -->
-                <div class="reports-filters">
-                    <div class="filter-group">
-                        <label for="report-patient-select">👤 Paciente:</label>
-                        <select id="report-patient-select" class="filter-input">
-                            <option value="">Todos os pacientes</option>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="report-date-from">📅 Data Inicial:</label>
-                        <input type="date" id="report-date-from" class="filter-input">
-                    </div>
-                    
-                    <div class="filter-group">
-                        <label for="report-date-to">📅 Data Final:</label>
-                        <input type="date" id="report-date-to" class="filter-input">
-                    </div>
-                    
-                    <div class="filter-actions">
-                        <button id="clear-report-filters" class="btn-secondary">🗑️ Limpar Filtros</button>
-                        <button id="apply-report-filters" class="btn-primary">🔍 Aplicar Filtros</button>
-                    </div>
-                </div>
-
-                <!-- Abas de Relatórios -->
-                <div class="reports-tabs">
-                    <button class="tab-btn active" data-tab="general">📈 Geral</button>
-                    <button class="tab-btn" data-tab="groups">📊 Por Grupos</button>
-                    <button class="tab-btn" data-tab="subgroups">🎯 Por Subgrupos</button>
-                    <button class="tab-btn" data-tab="evolution">📈 Evolução</button>
-                </div>
-
-                <!-- Conteúdo das Abas -->
-                <div class="reports-content">
-                    
-                    <!-- Relatório Geral -->
-                    <div id="general-tab" class="report-tab active">
-                        <div class="report-header">
-                            <h3>📊 Relatório Geral</h3>
-                            <button class="export-btn" data-export-pdf="geral">📄 Exportar PDF</button>
-                        </div>
-                        <div class="report-body">
-                            <div class="chart-container">
-                                <canvas id="general-chart" width="800" height="400"></canvas>
+                            <div class="stat-card">
+                                <div class="stat-number" id="total-evaluations">-</div>
+                                <div class="stat-label">Avaliações</div>
                             </div>
-                            <div id="general-stats" class="stats-container"></div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="last-evaluation">-</div>
+                                <div class="stat-label">Última Avaliação</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number" id="avg-score">-</div>
+                                <div class="stat-label">Pontuação Média</div>
+                            </div>
                         </div>
                     </div>
+                </section>
 
-                    <!-- Relatório por Grupos -->
-                    <div id="groups-tab" class="report-tab">
-                        <div class="report-header">
-                            <h3>📊 Relatório por Grupos de Habilidades</h3>
-                            <button class="export-btn" data-export-pdf="por_grupo">📄 Exportar PDF</button>
-                        </div>
-                        <div class="report-body">
-                            <div class="chart-container">
-                                <canvas id="groups-chart" width="800" height="400"></canvas>
-                            </div>
-                            <div id="groups-stats" class="stats-container"></div>
+                <section class="module-card helper-card" id="quick-insights">
+                    <header class="module-card__header">
+                        <h3>⚙️ Ações rápidas</h3>
+                    </header>
+                    <div class="module-card__body">
+                        <ul class="helper-list">
+                            <li><button type="button" class="link-button" data-trigger-nav="analytics-panel">Gerar consulta analítica</button></li>
+                            <li><button type="button" class="link-button" data-trigger-nav="patients-panel">Gerenciar pacientes</button></li>
+                            <li><button type="button" class="link-button" data-trigger-nav="reports-panel">Abrir relatórios</button></li>
+                        </ul>
+                        <div class="helper-hint">
+                            💡 Dica: utilize os filtros globais para preparar análises e gerar PDIs focados.
                         </div>
                     </div>
+                </section>
+            </aside>
 
-                    <!-- Relatório por Subgrupos -->
-                    <div id="subgroups-tab" class="report-tab">
-                        <div class="report-header">
-                            <h3>🎯 Relatório por Subgrupos</h3>
-                            <button class="export-btn" data-export-pdf="por_subgrupo">📄 Exportar PDF</button>
-                        </div>
-                        <div class="report-body">
-                            <div class="chart-container">
-                                <canvas id="subgroups-chart" width="800" height="400"></canvas>
-                            </div>
-                            <div id="subgroups-stats" class="stats-container"></div>
-                        </div>
-                    </div>
+            <main class="workspace-main">
+                <nav class="workspace-nav" id="workspace-nav" role="tablist">
+                    <button type="button" class="nav-link is-active" data-panel="analytics-panel">Consulta Analítica</button>
+                    <button type="button" class="nav-link" data-panel="patients-panel">Pacientes &amp; Evolução</button>
+                    <button type="button" class="nav-link" data-panel="reports-panel">Relatórios</button>
+                </nav>
 
-                    <!-- Relatório de Evolução -->
-                    <div id="evolution-tab" class="report-tab">
-                        <div class="report-header">
-                            <h3>📈 Evolução Temporal</h3>
-                            <button class="export-btn" data-export-pdf="evolucao">📄 Exportar PDF</button>
-                        </div>
-                        <div class="report-body">
-                            <div class="evolution-notice">
-                                <p>💡 <strong>Dica:</strong> Selecione um paciente específico para visualizar sua evolução ao longo do tempo.</p>
+                <section id="analytics-panel" class="workspace-panel is-active" role="tabpanel">
+                    <section class="module-card filters-card filters-section" id="filters-card">
+                        <header class="module-card__header">
+                            <h3>🔍 Filtros de Busca</h3>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="filters-grid">
+                                <div class="filter-group">
+                                    <label for="patient-filter">Buscar Paciente:</label>
+                                    <input type="text" id="patient-filter" placeholder="Nome do paciente...">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="date-from">Data Inicial:</label>
+                                    <input type="date" id="date-from">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="date-to">Data Final:</label>
+                                    <input type="date" id="date-to">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="evaluator-filter">Avaliador:</label>
+                                    <select id="evaluator-filter">
+                                        <option value="">Todos os avaliadores</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="chart-container">
-                                <canvas id="evolution-chart" width="800" height="400"></canvas>
+                            <div class="filter-actions">
+                                <button type="button" id="apply-filters" class="btn-primary">🔍 Aplicar Filtros</button>
+                                <button type="button" id="clear-filters" class="btn-secondary">🗑️ Limpar</button>
+                                <button type="button" id="refresh-data" class="btn-secondary">🔄 Atualizar</button>
+                                <button type="button" id="deduplicate-data" class="btn-secondary">♻️ Corrigir Duplicadas</button>
                             </div>
-                            <div id="evolution-stats" class="stats-container"></div>
                         </div>
-                    </div>
-                </div>
+                    </section>
 
-                <!-- Ações Globais -->
-                <div class="global-actions">
-                    <button id="export-complete-report" class="btn-primary large" data-export-pdf="complete">
-                        📋 Exportar Relatório Completo (PDF)
-                    </button>
-                    <button id="refresh-reports" class="btn-secondary">🔄 Atualizar Relatórios</button>
-                </div>
-            </div>
+                    <section class="module-card analytics-card analytics-section" id="analytics-menu">
+                        <header class="module-card__header analytics-header">
+                            <div class="module-card__title">
+                                <h3>📊 Consulta Analítica</h3>
+                                <p>Explore avaliações e identifique oportunidades de intervenção.</p>
+                            </div>
+                            <div class="analytics-summary">
+                                <div class="summary-card">
+                                    <span class="summary-value" id="analytics-total-selected">0</span>
+                                    <span class="summary-label">Avaliações filtradas</span>
+                                </div>
+                                <div class="summary-card">
+                                    <span class="summary-value" id="analytics-average-percent">0%</span>
+                                    <span class="summary-label">Pontuação média</span>
+                                </div>
+                                <div class="summary-card">
+                                    <span class="summary-value" id="analytics-best-group">-</span>
+                                    <span class="summary-label">Destaque</span>
+                                </div>
+                            </div>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="analytics-filters">
+                                <div class="filter-group">
+                                    <label for="analytics-grouping">Agrupar por:</label>
+                                    <select id="analytics-grouping">
+                                        <option value="patient">Paciente</option>
+                                        <option value="evaluator">Avaliador</option>
+                                        <option value="category">Categoria de habilidades</option>
+                                        <option value="subgroup">Subgrupo de habilidades</option>
+                                        <option value="month">Mês/Ano</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-metric">Ordenar por:</label>
+                                    <select id="analytics-metric">
+                                        <option value="averagePercent">Pontuação média (%)</option>
+                                        <option value="averageScore">Pontuação média (total)</option>
+                                        <option value="count">Número de avaliações</option>
+                                        <option value="lastScore">Última pontuação (%)</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-patient">Filtrar paciente:</label>
+                                    <select id="analytics-patient">
+                                        <option value="">Todos os pacientes</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-evaluator">Filtrar avaliador:</label>
+                                    <select id="analytics-evaluator">
+                                        <option value="">Todos os avaliadores</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-date-from">Data inicial:</label>
+                                    <input type="date" id="analytics-date-from">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-date-to">Data final:</label>
+                                    <input type="date" id="analytics-date-to">
+                                </div>
+                            </div>
+
+                            <div class="analytics-actions">
+                                <button type="button" id="analytics-clear" class="btn-secondary">🧹 Limpar filtros</button>
+                                <button type="button" id="analytics-run" class="btn-primary">📈 Gerar análise</button>
+                            </div>
+
+                            <div class="analytics-summary-info">
+                                <p>Use os filtros para entender tendências e, quando necessário, selecione uma avaliação para gerar o PDI correspondente.</p>
+                            </div>
+
+                            <div class="analytics-detail-controls">
+                                <div class="detail-heading">
+                                    <h4>Visualização por Avaliação</h4>
+                                    <p>Selecione um paciente e uma avaliação para ver todas as respostas e preparar o PDI.</p>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="filter-group">
+                                        <label for="analytics-detail-patient">Paciente:</label>
+                                        <select id="analytics-detail-patient">
+                                            <option value="">Selecione um paciente...</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="analytics-detail-evaluation">Avaliação:</label>
+                                        <select id="analytics-detail-evaluation" disabled>
+                                            <option value="">Selecione uma avaliação...</option>
+                                        </select>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <button type="button" id="analytics-export-evaluation" class="btn-secondary" disabled>
+                                            💾 Exportar avaliação
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="analytics-evaluation-detail" class="analytics-evaluation-detail">
+                                <div class="analytics-empty">
+                                    <h4>Nenhuma avaliação selecionada</h4>
+                                    <p>Escolha um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
+                                </div>
+                            </div>
+
+                            <div class="analytics-results" id="analytics-results">
+                                <div class="analytics-empty">
+                                    <h4>Comece uma análise</h4>
+                                    <p>Selecione como deseja agrupar os dados e, se necessário, aplique filtros adicionais.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <section id="patients-panel" class="workspace-panel" role="tabpanel">
+                    <section class="module-card patients-section">
+                        <header class="module-card__header">
+                            <h3>👥 Lista de Pacientes</h3>
+                        </header>
+                        <div class="module-card__body">
+                            <div id="patients-list" class="patients-grid">
+                                <div class="loading-message">🔄 Carregando dados dos pacientes...</div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section id="patient-details" class="module-card patient-details" style="display: none;">
+                        <header class="module-card__header details-header">
+                            <h3 id="patient-name-title">Nome do Paciente</h3>
+                            <div class="details-actions">
+                                <button type="button" id="export-patient-data" class="btn-primary">📊 Exportar Dados</button>
+                                <button type="button" id="generate-report" class="btn-primary">📋 Gerar Relatório</button>
+                                <button type="button" id="close-details" class="btn-secondary">❌ Fechar</button>
+                            </div>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="patient-info-summary">
+                                <div class="info-grid">
+                                    <div class="info-item">
+                                        <label>Total de Avaliações:</label>
+                                        <span id="patient-total-evaluations">-</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Primeira Avaliação:</label>
+                                        <span id="patient-first-evaluation">-</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Última Avaliação:</label>
+                                        <span id="patient-last-evaluation">-</span>
+                                    </div>
+                                    <div class="info-item">
+                                        <label>Progresso Geral:</label>
+                                        <span id="patient-progress">-</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="evaluations-history">
+                                <h4>📅 Histórico de Avaliações</h4>
+                                <div id="evaluations-timeline" class="timeline"></div>
+                            </div>
+
+                            <div class="charts-section">
+                                <h4>📈 Gráficos de Evolução</h4>
+                                <div class="charts-grid">
+                                    <div class="chart-container">
+                                        <h5>Progresso por Categoria</h5>
+                                        <canvas id="categoryProgressChart"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h5>Evolução Temporal</h5>
+                                        <canvas id="temporalEvolutionChart"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h5>Comparação de Grupos</h5>
+                                        <div class="chart-controls">
+                                            <select id="group-comparison-selector">
+                                                <option value="">Selecione um grupo...</option>
+                                            </select>
+                                        </div>
+                                        <canvas id="groupComparisonChart"></canvas>
+                                    </div>
+                                    <div class="chart-container">
+                                        <h5>Radar de Habilidades</h5>
+                                        <canvas id="skillsRadarChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <section id="reports-panel" class="workspace-panel" role="tabpanel">
+                    <section id="reports-view" class="module-card view-content">
+                        <header class="module-card__header reports-header">
+                            <div>
+                                <h2>📊 Relatórios de Evolução</h2>
+                                <p>Análise detalhada do progresso dos pacientes com gráficos e exportação PDF</p>
+                            </div>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="reports-filters">
+                                <div class="filter-group">
+                                    <label for="report-patient-select">👤 Paciente:</label>
+                                    <select id="report-patient-select" class="filter-input">
+                                        <option value="">Todos os pacientes</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="report-date-from">📅 Data Inicial:</label>
+                                    <input type="date" id="report-date-from" class="filter-input">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="report-date-to">📅 Data Final:</label>
+                                    <input type="date" id="report-date-to" class="filter-input">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="report-evaluator-select">👤 Avaliador:</label>
+                                    <select id="report-evaluator-select" class="filter-input">
+                                        <option value="">Todos os avaliadores</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="reports-tabs">
+                                <button class="tab-btn active" data-tab="general">📈 Geral</button>
+                                <button class="tab-btn" data-tab="groups">📊 Por Grupos</button>
+                                <button class="tab-btn" data-tab="subgroups">🎯 Por Subgrupos</button>
+                                <button class="tab-btn" data-tab="evolution">📈 Evolução</button>
+                            </div>
+
+                            <div class="reports-content">
+                                <div id="general-tab" class="report-tab active">
+                                    <div class="report-header">
+                                        <h3>📊 Relatório Geral</h3>
+                                        <button class="export-btn" data-export-pdf="geral">📄 Exportar PDF</button>
+                                    </div>
+                                    <div class="report-body">
+                                        <div class="chart-container">
+                                            <canvas id="general-chart" width="800" height="400"></canvas>
+                                        </div>
+                                        <div id="general-stats" class="stats-container"></div>
+                                    </div>
+                                </div>
+
+                                <div id="groups-tab" class="report-tab">
+                                    <div class="report-header">
+                                        <h3>📊 Relatório por Grupos de Habilidades</h3>
+                                        <button class="export-btn" data-export-pdf="por_grupo">📄 Exportar PDF</button>
+                                    </div>
+                                    <div class="report-body">
+                                        <div class="chart-container">
+                                            <canvas id="groups-chart" width="800" height="400"></canvas>
+                                        </div>
+                                        <div id="groups-stats" class="stats-container"></div>
+                                    </div>
+                                </div>
+
+                                <div id="subgroups-tab" class="report-tab">
+                                    <div class="report-header">
+                                        <h3>🎯 Relatório por Subgrupos</h3>
+                                        <button class="export-btn" data-export-pdf="por_subgrupo">📄 Exportar PDF</button>
+                                    </div>
+                                    <div class="report-body">
+                                        <div class="chart-container">
+                                            <canvas id="subgroups-chart" width="800" height="400"></canvas>
+                                        </div>
+                                        <div id="subgroups-stats" class="stats-container"></div>
+                                    </div>
+                                </div>
+
+                                <div id="evolution-tab" class="report-tab">
+                                    <div class="report-header">
+                                        <h3>📈 Evolução Temporal</h3>
+                                        <button class="export-btn" data-export-pdf="evolucao">📄 Exportar PDF</button>
+                                    </div>
+                                    <div class="report-body">
+                                        <div class="evolution-notice">
+                                            <p>💡 <strong>Dica:</strong> Selecione um paciente específico para visualizar sua evolução ao longo do tempo.</p>
+                                        </div>
+                                        <div class="chart-container">
+                                            <canvas id="evolution-chart" width="800" height="400"></canvas>
+                                        </div>
+                                        <div id="evolution-stats" class="stats-container"></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="global-actions">
+                                <button id="export-complete-report" class="btn-primary large" data-export-pdf="complete">
+                                    📋 Exportar Relatório Completo (PDF)
+                                </button>
+                                <button id="refresh-reports" class="btn-secondary">🔄 Atualizar Relatórios</button>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+            </main>
         </div>
+    </div>
 
-        <!-- Modal de Relatório Detalhado -->
-        <div id="report-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 id="modal-title">Relatório Detalhado</h3>
-                    <button type="button" id="close-modal" class="close-button">❌</button>
-                </div>
-                <div class="modal-body" id="modal-content">
-                    <!-- Conteúdo será preenchido dinamicamente -->
-                </div>
-                <div class="modal-footer">
-                    <button type="button" id="modal-export" class="btn-primary">📊 Exportar</button>
-                    <button type="button" id="modal-close" class="btn-secondary">Fechar</button>
-                </div>
+    <div id="report-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Relatório Detalhado</h3>
+                <button type="button" id="close-modal" class="close-button">❌</button>
+            </div>
+            <div class="modal-body" id="modal-content"></div>
+            <div class="modal-footer">
+                <button type="button" id="modal-export" class="btn-primary">📊 Exportar</button>
+                <button type="button" id="modal-close" class="btn-secondary">Fechar</button>
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navButtons = Array.from(document.querySelectorAll('.workspace-nav .nav-link'));
+            const panels = Array.from(document.querySelectorAll('.workspace-panel'));
+            const helperButtons = Array.from(document.querySelectorAll('[data-trigger-nav]'));
+
+            const activatePanel = (panelId) => {
+                if (!panelId) return;
+                navButtons.forEach(button => {
+                    button.classList.toggle('is-active', button.dataset.panel === panelId);
+                });
+                panels.forEach(panel => {
+                    panel.classList.toggle('is-active', panel.id === panelId);
+                });
+            };
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (button.classList.contains('is-active')) return;
+                    activatePanel(button.dataset.panel);
+                });
+            });
+
+            helperButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const target = button.getAttribute('data-trigger-nav');
+                    activatePanel(target);
+                    const navTarget = navButtons.find(btn => btn.dataset.panel === target);
+                    if (navTarget) {
+                        navTarget.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    }
+                });
+            });
+        });
+    </script>
 
     <!-- Script melhorado com verificação de conexão e backup -->
     <script src="script-terapeuta-melhorado.js?v=3.0"></script>
@@ -519,485 +585,9 @@
         }
         
         .status-label {
-            font-size: 0.8em;
-            color: #666;
-            margin-top: 2px;
-        }
-        
-        .sync-actions {
-            display: flex;
-            gap: 10px;
-            margin: 15px 0;
-        }
-        
-        .btn-sync {
-            background: #17a2b8;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        .btn-sync:hover {
-            background: #138496;
-        }
-        
-        .btn-sync:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-        }
-
-        /* Estilos para Sistema de Relatórios */
-        .reports-header {
-            text-align: center;
-            margin-bottom: 2rem;
-            padding: 2rem;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border-radius: 10px;
-        }
-
-        .reports-filters {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-            display: flex;
-            gap: 1rem;
-            align-items: end;
-            flex-wrap: wrap;
-        }
-
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            min-width: 200px;
-        }
-
-        .filter-group label {
-            font-weight: bold;
-            margin-bottom: 0.5rem;
-            color: #495057;
-        }
-
-        .filter-input {
-            padding: 0.5rem;
-            border: 1px solid #ced4da;
-            border-radius: 5px;
-            font-size: 1rem;
-        }
-
-        .filter-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-
-        .reports-tabs {
-            display: flex;
-            border-bottom: 2px solid #e9ecef;
-            margin-bottom: 2rem;
-            gap: 0.5rem;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 1rem 1.5rem;
-            cursor: pointer;
-            border-radius: 10px 10px 0 0;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            font-size: 1rem;
-        }
-
-        .tab-btn:hover {
-            background: #e9ecef;
-        }
-
-        .tab-btn.active {
-            background: #007bff;
-            color: white;
-        }
-
-        .report-tab {
-            display: none;
-            min-height: 400px;
-        }
-
-        .report-tab.active {
-            display: block;
-        }
-
-        .report-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid #e9ecef;
-        }
-
-        .report-header h3 {
-            margin: 0;
-            color: #495057;
-        }
-
-        .export-btn {
-            background: #28a745;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: background 0.3s ease;
-        }
-
-        .export-btn:hover {
-            background: #218838;
-        }
-
-        .chart-container {
-            background: white;
-            padding: 2rem;
-            border-radius: 10px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-            min-height: 400px;
-        }
-
-        .chart-container canvas {
-            max-width: 100%;
-            height: auto !important;
-        }
-
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-
-        .stat-item {
-            background: #f8f9fa;
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid #007bff;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #007bff;
-            margin-bottom: 0.5rem;
-        }
-
-        .stat-description {
+            font-size: 12px;
             color: #6c757d;
-            font-size: 0.9rem;
-        }
-
-        .evolution-notice {
-            background: #e3f2fd;
-            border: 1px solid #bbdefb;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 2rem;
-            color: #1976d2;
-        }
-
-        .global-actions {
-            text-align: center;
-            margin-top: 3rem;
-            padding: 2rem;
-            background: #f8f9fa;
-            border-radius: 10px;
-        }
-
-        .btn-primary.large {
-            font-size: 1.2rem;
-            padding: 1rem 2rem;
-            margin-right: 1rem;
-        }
-
-        .modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 10000;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background: white;
-            border-radius: 10px;
-            max-width: 90%;
-            max-height: 90%;
-            overflow: auto;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1.5rem;
-            border-bottom: 1px solid #e9ecef;
-        }
-
-        .modal-body {
-            padding: 2rem;
-            max-height: 60vh;
-            overflow-y: auto;
-        }
-
-        .modal-footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 1rem;
-            padding: 1.5rem;
-            border-top: 1px solid #e9ecef;
-        }
-
-        .close-button {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-
-        .close-button:hover {
-            background: #c82333;
-        }
-
-        /* Responsividade para relatórios */
-        @media (max-width: 768px) {
-            .reports-filters {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .filter-group {
-                min-width: auto;
-            }
-
-            .reports-tabs {
-                flex-wrap: wrap;
-            }
-
-            .tab-btn {
-                flex: 1;
-                min-width: 120px;
-            }
-
-            .report-header {
-                flex-direction: column;
-                gap: 1rem;
-                text-align: center;
-            }
         }
     </style>
-    
-    <div class="sync-info">
-        ⚡ Sincronização automática • Última atualização: <span id="last-sync-time">--:--</span>
-    </div>
-    
-    <!-- Adicionar barra de status na seção de estatísticas -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Adicionar barra de status após as estatísticas
-            const statsSection = document.querySelector('.stats-grid');
-            if (statsSection) {
-                const statusBar = document.createElement('div');
-                statusBar.className = 'status-bar';
-                statusBar.innerHTML = `
-                    <div class="status-item">
-                        <div class="status-number" id="firebase-count">0</div>
-                        <div class="status-label">Na Nuvem</div>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-number" id="local-count">0</div>
-                        <div class="status-label">Local</div>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-number" id="recent-evaluations">0</div>
-                        <div class="status-label">Últimos 7 dias</div>
-                    </div>
-                `;
-                statsSection.parentNode.insertBefore(statusBar, statsSection.nextSibling);
-            }
-            
-            // Adicionar botões de sincronização
-            const controlsSection = document.querySelector('.view-controls');
-            if (controlsSection) {
-                const syncActions = document.createElement('div');
-                syncActions.className = 'sync-actions';
-                syncActions.innerHTML = `
-                    <button id="sync-data" class="btn-sync">🔄 Sincronizar</button>
-                    <button id="force-sync-data" class="btn-sync" style="background-color: #e74c3c; color: white;" title="Força envio de TODOS os dados locais">🚀 Sync Forçado</button>
-                    <button id="refresh-data-btn" class="btn-sync">♻️ Atualizar</button>
-                `;
-                controlsSection.appendChild(syncActions);
-            }
-            
-            // Adicionar legenda de fontes de dados
-            const evaluationsList = document.getElementById('evaluations-list');
-            if (evaluationsList && evaluationsList.parentNode) {
-                const legend = document.createElement('div');
-                legend.className = 'data-source-legend';
-                legend.innerHTML = `
-                    <div class="legend-item cloud">☁️ Dados na Nuvem</div>
-                    <div class="legend-item local">💾 Dados Locais</div>
-                `;
-                evaluationsList.parentNode.insertBefore(legend, evaluationsList);
-            }
-        });
-    </script>
-
-    <!-- Inicialização do Sistema de Relatórios -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Inicializando sistema de relatórios...');
-            
-            // Função para inicializar relatórios
-            function initializeReportsSystem() {
-                return new Promise((resolve, reject) => {
-                    // Aguardar ReportsManager estar disponível
-                    let attempts = 0;
-                    const maxAttempts = 50;
-                    
-                    function checkReportsManager() {
-                        if (window.ReportsManager && typeof window.ReportsManager === 'function') {
-                            try {
-                                window.reportsManager = new window.ReportsManager();
-                                console.log('✅ Sistema de relatórios inicializado com sucesso');
-                                resolve();
-                            } catch (error) {
-                                console.error('❌ Erro ao criar ReportsManager:', error);
-                                reject(error);
-                            }
-                        } else if (attempts < maxAttempts) {
-                            attempts++;
-                            setTimeout(checkReportsManager, 200);
-                        } else {
-                            console.error('❌ Timeout: ReportsManager não foi carregado');
-                            reject(new Error('ReportsManager timeout'));
-                        }
-                    }
-                    
-                    checkReportsManager();
-                });
-            }
-            
-            // Inicializar sistema após carregamento
-            setTimeout(() => {
-                initializeReportsSystem()
-                    .then(() => setupReportsEventListeners())
-                    .catch(error => {
-                        console.error('❌ Falha na inicialização dos relatórios:', error);
-                        // Tentar novamente em 3 segundos
-                        setTimeout(() => {
-                            initializeReportsSystem()
-                                .then(() => setupReportsEventListeners())
-                                .catch(err => console.error('❌ Segunda tentativa falhou:', err));
-                        }, 3000);
-                    });
-            }, 1500);
-        });
-
-        function setupReportsEventListeners() {
-            // Configurar eventos dos botões de relatório
-            const tabButtons = document.querySelectorAll('.tab-btn');
-            tabButtons.forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tabId = this.dataset.tab;
-                    if (window.reportsManager && typeof window.reportsManager.showTab === 'function') {
-                        window.reportsManager.showTab(tabId);
-                    }
-                    
-                    // Remover classe active de todos os botões
-                    tabButtons.forEach(b => b.classList.remove('active'));
-                    this.classList.add('active');
-                    
-                    // Mostrar aba correspondente
-                    document.querySelectorAll('.report-tab').forEach(tab => {
-                        tab.classList.remove('active');
-                    });
-                    const targetTab = document.getElementById(tabId + '-tab');
-                    if (targetTab) {
-                        targetTab.classList.add('active');
-                    }
-                });
-            });
-            
-            // Configurar filtros de relatório
-            const applyFiltersBtn = document.getElementById('apply-report-filters');
-            const clearFiltersBtn = document.getElementById('clear-report-filters');
-            
-            if (applyFiltersBtn) {
-                applyFiltersBtn.addEventListener('click', () => {
-                    const patientSelect = document.getElementById('report-patient-select');
-                    const dateFrom = document.getElementById('report-date-from');
-                    const dateTo = document.getElementById('report-date-to');
-                    
-                    if (window.reportsManager && typeof window.reportsManager.applyFilters === 'function') {
-                        window.reportsManager.applyFilters({
-                            patient: patientSelect?.value || '',
-                            dateFrom: dateFrom?.value || '',
-                            dateTo: dateTo?.value || ''
-                        });
-                    }
-                });
-            }
-            
-            if (clearFiltersBtn) {
-                clearFiltersBtn.addEventListener('click', () => {
-                    const patientSelect = document.getElementById('report-patient-select');
-                    const dateFromInput = document.getElementById('report-date-from');
-                    const dateToInput = document.getElementById('report-date-to');
-                    
-                    if (patientSelect) patientSelect.value = '';
-                    if (dateFromInput) dateFromInput.value = '';
-                    if (dateToInput) dateToInput.value = '';
-                    
-                    if (window.reportsManager && typeof window.reportsManager.clearFilters === 'function') {
-                        window.reportsManager.clearFilters();
-                    }
-                });
-            }
-            
-            // Configurar botões de exportação PDF
-            document.querySelectorAll('.export-btn, #export-complete-report').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const reportType = this.dataset.exportPdf || 'complete';
-                    if (window.reportsManager && typeof window.reportsManager.exportToPDF === 'function') {
-                        window.reportsManager.exportToPDF(reportType);
-                    }
-                });
-            });
-            
-            // Configurar botão de atualização dos relatórios
-            const refreshReportsBtn = document.getElementById('refresh-reports');
-            if (refreshReportsBtn) {
-                refreshReportsBtn.addEventListener('click', () => {
-                    if (window.reportsManager && typeof window.reportsManager.refreshData === 'function') {
-                        window.reportsManager.refreshData();
-                    }
-                });
-            }
-            
-            console.log('✅ Event listeners dos relatórios configurados');
-        }
-    </script>
 </body>
 </html>
