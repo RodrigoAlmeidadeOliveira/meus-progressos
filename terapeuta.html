@@ -56,7 +56,7 @@
                 <div class="header-actions">
                     <a href="pais.html" class="btn-secondary">📝 Formulário para Pais</a>
                     <a href="index.html" class="btn-secondary">🏠 Meus Progressos</a>
-                    <button type="button" class="btn-secondary" data-trigger-nav="analytics-panel">📊 Consulta Analítica</button>
+                    <button type="button" class="btn-secondary" data-trigger-nav="reports-panel">📊 Relatórios</button>
                 </div>
             </div>
         </header>
@@ -119,8 +119,8 @@
                         </ul>
                         <div class="insight-actions">
                             <button type="button" class="link-button" data-trigger-nav="dashboard-panel" data-focus-target="#patients-list">👥 Acessar pacientes</button>
-                            <button type="button" class="link-button" data-trigger-nav="analytics-panel">📊 Consulta analítica</button>
                             <button type="button" class="link-button" data-trigger-nav="pdi-panel">🧠 Gerar PDI</button>
+                            <button type="button" class="link-button" data-trigger-nav="reports-panel">📊 Relatórios</button>
                         </div>
                     </div>
                 </section>
@@ -129,7 +129,6 @@
             <main class="workspace-main">
                 <nav class="workspace-nav" id="workspace-nav" role="tablist">
                     <button type="button" class="nav-link is-active" data-panel="dashboard-panel">Dashboard</button>
-                    <button type="button" class="nav-link" data-panel="analytics-panel">Consulta Analítica</button>
                     <button type="button" class="nav-link" data-panel="pdi-panel">PDI</button>
                     <button type="button" class="nav-link" data-panel="reports-panel">Relatórios</button>
                 </nav>
@@ -240,90 +239,6 @@
                                         <h5>Radar de Habilidades</h5>
                                         <canvas id="skillsRadarChart"></canvas>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </section>
-
-                <section id="analytics-panel" class="workspace-panel" role="tabpanel">
-                    <section class="module-card analytics-card analytics-section" id="analytics-menu">
-                        <header class="module-card__header analytics-header">
-                            <div class="module-card__title">
-                                <h3>📊 Consulta Analítica</h3>
-                                <p>Explore avaliações e identifique oportunidades de intervenção.</p>
-                            </div>
-                            <div class="analytics-summary">
-                                <div class="summary-card">
-                                    <span class="summary-value" id="analytics-total-selected">0</span>
-                                    <span class="summary-label">Avaliações filtradas</span>
-                                </div>
-                                <div class="summary-card">
-                                    <span class="summary-value" id="analytics-average-percent">0%</span>
-                                    <span class="summary-label">Pontuação média</span>
-                                </div>
-                                <div class="summary-card">
-                                    <span class="summary-value" id="analytics-best-group">-</span>
-                                    <span class="summary-label">Destaque</span>
-                                </div>
-                            </div>
-                        </header>
-                        <div class="module-card__body">
-                            <div class="analytics-placeholder">
-                                <h4>Informação consolidada nos relatórios</h4>
-                                <p>Os painéis e tabelas de consulta analítica foram realocados para a aba <strong>Relatórios</strong>, onde você encontra as mesmas visualizações com exportação dedicada.</p>
-                                <p>Utilize esta seção apenas para acessar rapidamente o painel de relatórios ou avance para a aba <strong>PDI</strong> para montar planos personalizados.</p>
-                            </div>
-                        </div>
-                    </section>
-                </section>
-
-                <section id="pdi-panel" class="workspace-panel" role="tabpanel">
-                    <section class="module-card pdi-card pdi-section" id="pdi-menu">
-                        <header class="module-card__header pdi-header">
-                            <div class="module-card__title">
-                                <h3>🧠 PDI - Plano de Desenvolvimento Individual</h3>
-                                <p>Gere planos de intervenção personalizados baseados nas avaliações dos pacientes.</p>
-                            </div>
-                        </header>
-                        <div class="module-card__body">
-                            <div class="pdi-intro">
-                                <p>💡 <strong>Como funciona:</strong> Selecione um paciente e uma avaliação específica. O sistema analisará as respostas e gerará automaticamente um plano de desenvolvimento com objetivos e estratégias de intervenção.</p>
-                            </div>
-
-                            <div class="pdi-selection">
-                                <div class="detail-heading">
-                                    <h4>Seleção de Paciente e Avaliação</h4>
-                                    <p>Escolha o paciente e a avaliação base para o PDI.</p>
-                                </div>
-                                <div class="detail-grid">
-                                    <div class="filter-group">
-                                        <label for="pdi-detail-patient">Paciente:</label>
-                                        <select id="pdi-detail-patient">
-                                            <option value="">Selecione um paciente...</option>
-                                        </select>
-                                    </div>
-                                    <div class="filter-group">
-                                        <label for="pdi-detail-evaluation">Avaliação:</label>
-                                        <select id="pdi-detail-evaluation" disabled>
-                                            <option value="">Selecione uma avaliação...</option>
-                                        </select>
-                                    </div>
-                                    <div class="detail-actions">
-                                        <button type="button" id="pdi-export-evaluation" class="btn-secondary" disabled>
-                                            💾 Exportar avaliação
-                                        </button>
-                                        <button type="button" id="pdi-generate" class="btn-primary" disabled>
-                                            ✨ Gerar PDI
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="pdi-evaluation-detail" class="analytics-evaluation-detail">
-                                <div class="analytics-empty">
-                                    <h4>Nenhuma avaliação selecionada</h4>
-                                    <p>Selecione um paciente e uma avaliação para visualizar os detalhes e gerar o PDI.</p>
                                 </div>
                             </div>
                         </div>

@@ -46,7 +46,6 @@ function getDetailContext(context = 'analytics') {
 function setupAnalyticsControls() {
     const panel = document.getElementById('analytics-menu');
     if (!panel) {
-        console.warn('⚠️ Terapeuta: Painel analítico não encontrado');
         return;
     }
 
