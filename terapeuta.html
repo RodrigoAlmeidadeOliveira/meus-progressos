@@ -269,95 +269,10 @@
                             </div>
                         </header>
                         <div class="module-card__body">
-                            <div class="analytics-filters">
-                                <div class="filter-group">
-                                    <label for="analytics-grouping">Agrupar por:</label>
-                                    <select id="analytics-grouping">
-                                        <option value="patient">Paciente</option>
-                                        <option value="evaluator">Avaliador</option>
-                                        <option value="category">Categoria de habilidades</option>
-                                        <option value="subgroup">Subgrupo de habilidades</option>
-                                        <option value="month">Mês/Ano</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-metric">Ordenar por:</label>
-                                    <select id="analytics-metric">
-                                        <option value="averagePercent">Pontuação média (%)</option>
-                                        <option value="averageScore">Pontuação média (total)</option>
-                                        <option value="count">Número de avaliações</option>
-                                        <option value="lastScore">Última pontuação (%)</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-patient">Filtrar paciente:</label>
-                                    <select id="analytics-patient">
-                                        <option value="">Todos os pacientes</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-evaluator">Filtrar avaliador:</label>
-                                    <select id="analytics-evaluator">
-                                        <option value="">Todos os avaliadores</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-date-from">Data inicial:</label>
-                                    <input type="date" id="analytics-date-from">
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-date-to">Data final:</label>
-                                    <input type="date" id="analytics-date-to">
-                                </div>
-                            </div>
-
-                            <div class="analytics-actions">
-                                <button type="button" id="analytics-clear" class="btn-secondary">🧹 Limpar filtros</button>
-                                <button type="button" id="analytics-run" class="btn-primary">📈 Gerar análise</button>
-                            </div>
-
-                            <div class="analytics-summary-info">
-                                <p>Use os filtros para entender tendências e validar a qualidade das avaliações coletadas.</p>
-                            </div>
-
-                            <div class="analytics-results" id="analytics-results">
-                                <div class="analytics-empty">
-                                    <h4>Comece uma análise</h4>
-                                    <p>Selecione como deseja agrupar os dados e, se necessário, aplique filtros adicionais.</p>
-                                </div>
-                            </div>
-
-                            <div class="analytics-detail-controls">
-                                <div class="detail-heading">
-                                    <h4>Visualização por Avaliação</h4>
-                                    <p>Selecione um paciente e uma avaliação para ver todas as respostas e preparar o PDI.</p>
-                                </div>
-                                <div class="detail-grid">
-                                    <div class="filter-group">
-                                        <label for="analytics-detail-patient">Paciente:</label>
-                                        <select id="analytics-detail-patient">
-                                            <option value="">Selecione um paciente...</option>
-                                        </select>
-                                    </div>
-                                    <div class="filter-group">
-                                        <label for="analytics-detail-evaluation">Avaliação:</label>
-                                        <select id="analytics-detail-evaluation" disabled>
-                                            <option value="">Selecione uma avaliação...</option>
-                                        </select>
-                                    </div>
-                                    <div class="detail-actions">
-                                        <button type="button" id="analytics-export-evaluation" class="btn-secondary" disabled>
-                                            💾 Exportar avaliação
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="analytics-evaluation-detail" class="analytics-evaluation-detail">
-                                <div class="analytics-empty">
-                                    <h4>Nenhuma avaliação selecionada</h4>
-                                    <p>Escolha um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
-                                </div>
+                            <div class="analytics-placeholder">
+                                <h4>Informação consolidada nos relatórios</h4>
+                                <p>Os painéis e tabelas de consulta analítica foram realocados para a aba <strong>Relatórios</strong>, onde você encontra as mesmas visualizações com exportação dedicada.</p>
+                                <p>Utilize esta seção apenas para acessar rapidamente o painel de relatórios ou avance para a aba <strong>PDI</strong> para montar planos personalizados.</p>
                             </div>
                         </div>
                     </section>
