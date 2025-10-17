@@ -1,5 +1,7 @@
-import { attachAnalyticsModule } from './modules/analytics-module.js?v=3.2';
-import { ui } from './modules/ui.js?v=3.2';
+import { attachAnalyticsModule } from './modules/analytics-module.js?v=3.3';
+import { attachPDIModule } from './modules/pdi-module.js?v=3.3';
+import { attachEventBusModule } from './modules/event-bus.js?v=3.3';
+import { ui } from './modules/ui.js?v=3.3';
 
 // Script melhorado para o Painel do Terapeuta
 // Sistema robusto com verificação de conexão e backup de dados
@@ -719,7 +721,7 @@ class TerapeutaPanelMelhorado {
         
         this.setupEventListeners();
         this.setupAnalyticsControls();
-        this.setupPdiSelectors();
+        this.setupPDIControls();
         this.setupConnectionMonitor();
         this.setupAutoRefresh();
         this.initializeReportsManager();
@@ -810,32 +812,6 @@ class TerapeutaPanelMelhorado {
             deduplicateButton.addEventListener('click', () => {
                 this.runDeduplication();
             });
-        }
-    }
-
-    setupPdiSelectors() {
-        const patientSelect = document.getElementById('pdi-detail-patient');
-        const evaluationSelect = document.getElementById('pdi-detail-evaluation');
-        const exportButton = document.getElementById('pdi-export-evaluation');
-        const container = document.getElementById('pdi-evaluation-detail');
-
-        if (!patientSelect || !evaluationSelect || !container) {
-            this.pdiSelectors = null;
-            return;
-        }
-
-        this.pdiSelectors = {
-            patient: patientSelect,
-            evaluation: evaluationSelect,
-            exportButton,
-            container
-        };
-
-        patientSelect.addEventListener('change', (event) => this.handleDetailPatientChange(event, 'pdi'));
-        evaluationSelect.addEventListener('change', (event) => this.handleDetailEvaluationChange(event, 'pdi'));
-
-        if (exportButton) {
-            exportButton.addEventListener('click', () => this.exportSelectedEvaluation());
         }
     }
 
@@ -3511,7 +3487,9 @@ class TerapeutaPanelMelhorado {
     }
 }
 
+attachEventBusModule(TerapeutaPanelMelhorado.prototype);
 attachAnalyticsModule(TerapeutaPanelMelhorado.prototype);
+attachPDIModule(TerapeutaPanelMelhorado.prototype);
 
 // Adicionar estilos para o terapeuta melhorado
 const terapeutaStyle = document.createElement('style');

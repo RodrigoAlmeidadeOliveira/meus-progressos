@@ -12,8 +12,8 @@ export function attachPDIModule(proto) {
         setupPDIControls,
         handlePDIPatientChange,
         handlePDIEvaluationChange,
-        generatePDI,
-        exportPDI
+        handleGeneratePDI,
+        handleExportPDI
     });
 }
 
@@ -51,13 +51,13 @@ function setupPDIControls() {
 
     if (this.pdiSelectors.generateButton) {
         this.pdiSelectors.generateButton.addEventListener('click', () => {
-            this.generatePDI();
+            this.handleGeneratePDI();
         });
     }
 
     if (this.pdiSelectors.exportButton) {
         this.pdiSelectors.exportButton.addEventListener('click', () => {
-            this.exportSelectedEvaluation();
+            this.handleExportPDI();
         });
     }
 
@@ -71,6 +71,13 @@ function setupPDIControls() {
 function handlePDIPatientChange(event) {
     const patientKey = event.target.value || null;
     this.selectedEvaluationId = null;
+
+    if (this.pdiSelectors?.generateButton) {
+        this.pdiSelectors.generateButton.disabled = true;
+    }
+    if (this.pdiSelectors?.exportButton) {
+        this.pdiSelectors.exportButton.disabled = true;
+    }
 
     // Observer Pattern: Notifica o módulo Analytics da mudança
     if (this.analyticsControls?.detailPatient) {
@@ -88,6 +95,7 @@ function handlePDIPatientChange(event) {
 function handlePDIEvaluationChange(event) {
     const evaluationId = event.target.value || null;
     this.selectedEvaluationId = evaluationId || null;
+    this.currentPdiEvaluation = evaluationId ? this.evaluationIndex.get(evaluationId) : null;
 
     // Atualiza o botão de gerar PDI
     if (this.pdiSelectors?.generateButton) {
@@ -97,7 +105,7 @@ function handlePDIEvaluationChange(event) {
     // Observer Pattern: Sincroniza com Analytics
     const contexts = ['analytics', 'pdi'];
     contexts.forEach(ctx => {
-        const selectors = this.getDetailContextForPDI(ctx);
+        const selectors = this.getDetailContext ? this.getDetailContext(ctx) : null;
         if (selectors?.evaluationSelect && selectors.evaluationSelect !== event.target) {
             selectors.evaluationSelect.value = this.selectedEvaluationId || '';
         }
@@ -111,69 +119,34 @@ function handlePDIEvaluationChange(event) {
 }
 
 /**
- * Função auxiliar para obter contexto (compartilhada entre módulos)
- */
-function getDetailContextForPDI(context) {
-    if (context === 'pdi') {
-        const selectors = this.pdiSelectors;
-        if (!selectors) return null;
-        return {
-            patientSelect: selectors.patient || null,
-            evaluationSelect: selectors.evaluation || null,
-            exportButton: selectors.exportButton || null,
-            generateButton: selectors.generateButton || null,
-            container: selectors.container || null
-        };
-    }
-
-    if (!this.analyticsControls) return null;
-    return {
-        patientSelect: this.analyticsControls.detailPatient || null,
-        evaluationSelect: this.analyticsControls.detailEvaluation || null,
-        exportButton: this.analyticsControls.viewEvaluation || null,
-        container: this.analyticsControls.evaluationDetailContainer || null
-    };
-}
-
-/**
  * Gera o PDI baseado na avaliação selecionada
- * Esta função analisa as respostas e cria um plano de intervenção
  */
-function generatePDI() {
+function handleGeneratePDI() {
     if (!this.selectedEvaluationId) {
         this.showNotification('Selecione uma avaliação para gerar o PDI.', 'warning');
         return;
     }
 
-    const evaluation = this.evaluationIndex.get(this.selectedEvaluationId);
-    if (!evaluation) {
+    if (!this.currentPdiEvaluation) {
+        this.currentPdiEvaluation = this.evaluationIndex.get(this.selectedEvaluationId) || null;
+    }
+
+    if (!this.currentPdiEvaluation) {
         this.showNotification('Avaliação não encontrada.', 'error');
         return;
     }
 
-    // DRY: Reutiliza funções existentes de análise
-    const responsesMap = this.mapResponsesByQuestion(evaluation);
-    const patientName = evaluation.patientInfo?.name || 'Paciente';
-
-    // Análise de habilidades (baseado nas respostas)
-    const weakAreas = this.identifyWeakAreas(responsesMap);
-    const strengthAreas = this.identifyStrengthAreas(responsesMap);
-
-    // Renderiza o PDI
-    this.renderPDI(evaluation, weakAreas, strengthAreas);
-
-    this.showNotification('PDI gerado com sucesso!', 'success');
+    this.generatePdiPlan(this.currentPdiEvaluation, { trigger: 'manual' });
 }
 
 /**
  * Exporta o PDI como PDF ou CSV
  */
-function exportPDI() {
+function handleExportPDI() {
     if (!this.selectedEvaluationId) {
         this.showNotification('Gere um PDI antes de exportar.', 'warning');
         return;
     }
 
-    // Implementação da exportação será adicionada
-    this.showNotification('Função de exportação em desenvolvimento.', 'info');
+    this.exportPdiPlan();
 }

@@ -9,6 +9,7 @@
 
 export function attachAnalyticsModule(proto) {
     Object.assign(proto, {
+        getDetailContext,
         setupAnalyticsControls,
         populateAnalyticsFilters,
         populateDetailSelectors,
@@ -28,6 +29,7 @@ function getDetailContext(context = 'analytics') {
             patientSelect: selectors.patient || null,
             evaluationSelect: selectors.evaluation || null,
             exportButton: selectors.exportButton || selectors.exportEvaluation || null,
+            generateButton: selectors.generateButton || null,
             container: selectors.container || null
         };
     }
@@ -292,8 +294,8 @@ function handleDetailPatientChange(event, context = 'analytics') {
     this.populateEvaluationOptionsForPatient(patientKey, otherContext);
 
     // Observer Pattern: Publica evento de seleção de paciente
-    if (this.publishEvent) {
-        this.publishEvent('PATIENT_SELECTED', { patientKey, context });
+    if (this.publishEvent && this.Events?.PATIENT_SELECTED) {
+        this.publishEvent(this.Events.PATIENT_SELECTED, { patientKey, context });
     }
 }
 
@@ -310,14 +312,17 @@ function handleDetailEvaluationChange(event, context = 'analytics') {
         if (selectors?.exportButton) {
             selectors.exportButton.disabled = !this.selectedEvaluationId;
         }
+        if (ctx === 'pdi' && selectors?.generateButton) {
+            selectors.generateButton.disabled = !this.selectedEvaluationId;
+        }
     });
 
     this.renderSelectedEvaluationDetail('analytics');
     this.renderSelectedEvaluationDetail('pdi');
 
     // Observer Pattern: Publica evento de seleção de avaliação
-    if (this.publishEvent) {
-        this.publishEvent('EVALUATION_SELECTED', { evaluationId, context });
+    if (this.publishEvent && this.Events?.EVALUATION_SELECTED) {
+        this.publishEvent(this.Events.EVALUATION_SELECTED, { evaluationId, context });
     }
 }
 
