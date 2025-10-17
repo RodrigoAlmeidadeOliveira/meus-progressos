@@ -741,19 +741,41 @@ class TerapeutaPanelMelhorado {
 
     async init() {
         console.log('🚀 Terapeuta: Inicializando painel melhorado...');
-        
+
         this.setupEventListeners();
         this.setupAnalyticsControls();
         this.setupPDIControls();
         this.setupConnectionMonitor();
         this.setupAutoRefresh();
         this.initializeReportsManager();
-        this.loadDashboard();
-        
-        // Aguardar Firebase e fazer primeira sincronização
+
+        // Aguardar Firebase estar pronto antes de carregar dashboard
+        await this.waitForFirebase();
+
+        // Carregar dashboard com dados do Firebase
+        await this.loadDashboard();
+
+        // Sincronizar dados pendentes (se houver)
         setTimeout(() => {
             this.syncPendingDataIfNeeded();
-        }, 3000);
+        }, 1000);
+    }
+
+    async waitForFirebase() {
+        console.log('⏳ Terapeuta: Aguardando Firebase estar pronto...');
+
+        // Aguardar até 10 segundos pelo Firebase
+        let attempts = 0;
+        while (!this.firebaseManager.initialized && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            attempts++;
+        }
+
+        if (this.firebaseManager.initialized) {
+            console.log('✅ Terapeuta: Firebase pronto, carregando dados...');
+        } else {
+            console.warn('⚠️ Terapeuta: Firebase não inicializou, usando dados locais');
+        }
     }
 
     initializeReportsManager() {
@@ -1026,19 +1048,25 @@ class TerapeutaPanelMelhorado {
         
         try {
             const result = await this.firebaseManager.syncPendingData();
-            
+
             if (result.success && result.synced > 0) {
                 this.showNotification(`✅ ${result.synced} avaliação(ões) sincronizada(s) com sucesso`, 'success');
-                this.refreshData(true); // Refresh silencioso após sync
+                this.refreshData(true, true); // Refresh silencioso após sync, forçar Firebase
             } else if (result.synced === 0) {
                 this.showNotification('✅ Todos os dados já estão sincronizados', 'success');
                 console.log('✅ Terapeuta: Todos os dados já estão sincronizados');
+
+                // Mesmo sem sincronizar, recarregar dados do Firebase se houver
+                if (this.filteredEvaluations.length === 0) {
+                    console.log('🔄 Terapeuta: Nenhum dado local, recarregando do Firebase...');
+                    this.refreshData(true, true); // Forçar busca do Firebase
+                }
             }
-            
+
             if (result.skipped > 0) {
                 console.log(`ℹ️ ${result.skipped} item(ns) pulados (já existem no Firebase)`);
             }
-            
+
             if (result.errors > 0) {
                 this.showNotification(`⚠️ ${result.errors} erro(s) na sincronização`, 'warning');
             }

@@ -1121,30 +1121,56 @@ class ReportsManager {
 
     async exportToPDF(reportType) {
         console.log(`📄 Exportando relatório ${reportType} para PDF...`);
-        
+
+        // Mostrar loading
+        this.showNotification('⏳ Gerando relatório PDF...', 'info');
+
         // Aguardar jsPDF estar disponível
         const exportPDF = async () => {
-            if (typeof jsPDF === 'undefined' || typeof html2canvas === 'undefined') {
+            if (!window.jspdf || !window.jspdf.jsPDF || typeof html2canvas === 'undefined') {
+                console.log('⏳ Aguardando bibliotecas PDF...');
                 setTimeout(exportPDF, 100);
                 return;
             }
 
             try {
+                // Verificar se há dados
+                if (!this.evaluations || this.evaluations.length === 0) {
+                    this.showNotification('❌ Nenhum dado disponível para gerar relatório. Por favor, carregue os dados primeiro.', 'error');
+                    return;
+                }
+
+                // Verificar se os gráficos foram gerados
+                const chartsToCapture = this.getChartsForReport(reportType);
+                let hasCharts = false;
+
+                for (const chartInfo of chartsToCapture) {
+                    if (this.charts[chartInfo.canvasId]) {
+                        hasCharts = true;
+                        break;
+                    }
+                }
+
+                if (!hasCharts) {
+                    this.showNotification('❌ Por favor, gere os relatórios primeiro clicando nas abas acima e depois tente exportar.', 'warning');
+                    return;
+                }
+
                 const { jsPDF } = window.jspdf;
                 const pdf = new jsPDF('p', 'mm', 'a4');
                 const pageWidth = pdf.internal.pageSize.getWidth();
                 const pageHeight = pdf.internal.pageSize.getHeight();
-                
+
                 // Título do relatório
                 pdf.setFontSize(20);
                 pdf.setFont('helvetica', 'bold');
                 pdf.text('Relatório de Avaliação - Meus Progressos', 20, 20);
-                
+
                 // Data do relatório
                 pdf.setFontSize(12);
                 pdf.setFont('helvetica', 'normal');
                 pdf.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 20, 30);
-                
+
                 let yPosition = 50;
 
                 // Informações do filtro
@@ -1161,7 +1187,6 @@ class ReportsManager {
                 yPosition += 10;
 
                 // Capturar gráficos baseado no tipo de relatório
-                const chartsToCapture = this.getChartsForReport(reportType);
                 
                 for (const chartInfo of chartsToCapture) {
                     const chartCanvas = document.getElementById(chartInfo.canvasId);
