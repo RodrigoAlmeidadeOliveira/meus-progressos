@@ -1,5 +1,5 @@
-import { attachAnalyticsModule } from './modules/analytics-module.js';
-import { ui } from './modules/ui.js';
+import { attachAnalyticsModule } from './modules/analytics-module.js?v=3.1';
+import { ui } from './modules/ui.js?v=3.1';
 
 // Script melhorado para o Painel do Terapeuta
 // Sistema robusto com verificação de conexão e backup de dados
