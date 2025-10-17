@@ -245,6 +245,58 @@
                     </section>
                 </section>
 
+                <section id="pdi-panel" class="workspace-panel" role="tabpanel">
+                    <section class="module-card pdi-card pdi-section" id="pdi-menu">
+                        <header class="module-card__header pdi-header">
+                            <div class="module-card__title">
+                                <h3>🧠 PDI - Plano de Desenvolvimento Individual</h3>
+                                <p>Gere planos de intervenção personalizados com base nas avaliações realizadas.</p>
+                            </div>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="pdi-intro">
+                                <p>💡 <strong>Como funciona:</strong> escolha um paciente e uma avaliação específica. O sistema analisará as respostas e apresentará automaticamente sugestões de intervenção.</p>
+                            </div>
+
+                            <div class="pdi-selection">
+                                <div class="detail-heading">
+                                    <h4>Selecionar paciente e avaliação</h4>
+                                    <p>Defina a avaliação que servirá de base para o plano.</p>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="filter-group">
+                                        <label for="pdi-detail-patient">Paciente:</label>
+                                        <select id="pdi-detail-patient">
+                                            <option value="">Selecione um paciente...</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="pdi-detail-evaluation">Avaliação:</label>
+                                        <select id="pdi-detail-evaluation" disabled>
+                                            <option value="">Selecione uma avaliação...</option>
+                                        </select>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <button type="button" id="pdi-export-evaluation" class="btn-secondary" disabled>
+                                            💾 Exportar avaliação
+                                        </button>
+                                        <button type="button" id="pdi-generate" class="btn-primary" disabled>
+                                            ✨ Gerar PDI
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="pdi-evaluation-detail" class="analytics-evaluation-detail">
+                                <div class="analytics-empty">
+                                    <h4>Nenhuma avaliação selecionada</h4>
+                                    <p>Selecione paciente e avaliação para visualizar os detalhes e montar o plano.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
                 <section id="reports-panel" class="workspace-panel" role="tabpanel">
                     <section id="reports-view" class="module-card view-content">
                         <header class="module-card__header reports-header">
