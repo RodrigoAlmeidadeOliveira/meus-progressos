@@ -136,12 +136,8 @@ function setupAnalyticsControls() {
 }
 
 function populateAnalyticsFilters(evaluations) {
-    if (!this.analyticsControls) {
-        return;
-    }
-
     const collator = new Intl.Collator('pt-BR', { sensitivity: 'base' });
-    const patientSelect = this.analyticsControls.patient;
+    const patientSelect = this.analyticsControls?.patient;
     if (patientSelect) {
         const selectedPatient = patientSelect.value;
         const patientsMap = new Map();
@@ -163,7 +159,7 @@ function populateAnalyticsFilters(evaluations) {
         }
     }
 
-    const evaluatorSelect = this.analyticsControls.evaluator;
+    const evaluatorSelect = this.analyticsControls?.evaluator;
     if (evaluatorSelect) {
         const selectedEvaluator = evaluatorSelect.value;
         const evaluatorsMap = new Map();
