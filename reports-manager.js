@@ -1737,6 +1737,667 @@ class ReportsManager {
         return { label: 'Muito Baixo', color: '#dc3545' };
     }
 
+    // Novo método para gerar PDI (Plano de Desenvolvimento de Intervenção)
+    showPDIGenerator(evaluation) {
+        console.log('📋 Gerando PDI para avaliação:', evaluation);
+
+        // Criar modal de PDI se não existir
+        let modal = document.getElementById('pdi-generator-modal');
+        if (!modal) {
+            modal = this.createPDIModal();
+        }
+
+        // Preencher com dados da avaliação
+        this.populatePDIGenerator(modal, evaluation);
+
+        // Mostrar modal
+        modal.style.display = 'flex';
+    }
+
+    createPDIModal() {
+        const modal = document.createElement('div');
+        modal.id = 'pdi-generator-modal';
+        modal.className = 'modal-overlay';
+        modal.style.cssText = `
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+
+        modal.innerHTML = `
+            <div class="modal-content-pdi" style="
+                background: white;
+                border-radius: 10px;
+                max-width: 1400px;
+                width: 100%;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            ">
+                <div class="modal-header-pdi" style="
+                    position: sticky;
+                    top: 0;
+                    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+                    color: white;
+                    padding: 20px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    z-index: 100;
+                ">
+                    <div>
+                        <h2 id="pdi-title" style="margin: 0;">PDI - Plano de Desenvolvimento de Intervenção</h2>
+                        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 14px;">Selecione as habilidades para intervenção</p>
+                    </div>
+                    <button class="close-modal-btn" onclick="document.getElementById('pdi-generator-modal').style.display='none'" style="
+                        background: rgba(255, 255, 255, 0.2);
+                        border: none;
+                        color: white;
+                        font-size: 24px;
+                        cursor: pointer;
+                        width: 40px;
+                        height: 40px;
+                        border-radius: 50%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                    ">&times;</button>
+                </div>
+                <div id="pdi-content" class="modal-body-pdi" style="padding: 30px;">
+                    <!-- Conteúdo será preenchido dinamicamente -->
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        // Fechar ao clicar fora do modal
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.style.display = 'none';
+            }
+        });
+
+        return modal;
+    }
+
+    populatePDIGenerator(modal, evaluation) {
+        const title = modal.querySelector('#pdi-title');
+        const content = modal.querySelector('#pdi-content');
+
+        const patientName = evaluation.patientInfo?.name || 'Paciente';
+        const evalDate = evaluation.patientInfo?.evaluationDate || evaluation.createdAt;
+        const formattedDate = new Date(evalDate).toLocaleDateString('pt-BR');
+
+        title.textContent = `PDI - ${patientName} - ${formattedDate}`;
+
+        // Armazenar avaliação no modal para uso posterior
+        modal.dataset.evaluationData = JSON.stringify(evaluation);
+
+        let html = `
+            <div class="pdi-info-box" style="
+                background: linear-gradient(135deg, #667eea20 0%, #764ba220 100%);
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 30px;
+                border-left: 4px solid #667eea;
+            ">
+                <h3 style="margin-top: 0; color: #667eea;">ℹ️ Como usar o gerador de PDI</h3>
+                <p style="margin: 10px 0;">
+                    <strong>1.</strong> Selecione as <strong>pontuações</strong> que deseja trabalhar (ex: notas 1, 2 e 3)<br>
+                    <strong>2.</strong> Selecione os <strong>grupos</strong> e/ou <strong>subgrupos</strong> de habilidades<br>
+                    <strong>3.</strong> Clique em <strong>"Gerar PDI"</strong> para visualizar as questões selecionadas<br>
+                    <strong>4.</strong> Exporte o PDI em PDF para impressão ou compartilhamento
+                </p>
+            </div>
+
+            <!-- Filtros de PDI -->
+            <div class="pdi-filters" style="
+                background: #f8f9fa;
+                padding: 25px;
+                border-radius: 10px;
+                margin-bottom: 30px;
+            ">
+                <h3 style="margin-top: 0; color: #495057;">🎯 Filtros para PDI</h3>
+
+                <!-- Filtro de Pontuações -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 10px; color: #495057;">
+                        📊 Selecione as Pontuações para Intervir:
+                    </label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        ${[1, 2, 3, 4, 5].map(score => {
+                            const level = this.getScoreLevel(score);
+                            return `
+                                <label style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                    padding: 10px 15px;
+                                    background: white;
+                                    border: 2px solid ${level.color};
+                                    border-radius: 8px;
+                                    cursor: pointer;
+                                    transition: all 0.3s;
+                                ">
+                                    <input type="checkbox"
+                                        class="pdi-score-filter"
+                                        value="${score}"
+                                        style="width: 18px; height: 18px; cursor: pointer;">
+                                    <span style="
+                                        background: ${level.color};
+                                        color: white;
+                                        padding: 4px 10px;
+                                        border-radius: 15px;
+                                        font-size: 13px;
+                                        font-weight: bold;
+                                    ">${score} - ${level.label}</span>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                    <small style="display: block; margin-top: 8px; color: #6c757d;">
+                        💡 Dica: Geralmente seleciona-se pontuações baixas (1, 2, 3) para intervenção
+                    </small>
+                </div>
+
+                <!-- Filtro de Grupos -->
+                <div style="margin-bottom: 25px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 10px; color: #495057;">
+                        📚 Selecione os Grupos de Habilidades:
+                    </label>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 10px;">
+                        ${Object.entries(this.groupMapping).map(([groupName, groupData]) => `
+                            <label style="
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                padding: 12px;
+                                background: white;
+                                border: 2px solid ${groupData.color};
+                                border-radius: 8px;
+                                cursor: pointer;
+                            ">
+                                <input type="checkbox"
+                                    class="pdi-group-filter"
+                                    value="${groupName}"
+                                    onchange="window.reportsManager.updatePDISubgroupFilters()"
+                                    style="width: 18px; height: 18px; cursor: pointer;">
+                                <span style="font-weight: 600; color: ${groupData.color};">${groupName}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Filtro de Subgrupos -->
+                <div id="pdi-subgroups-container" style="margin-bottom: 25px;">
+                    <label style="display: block; font-weight: bold; margin-bottom: 10px; color: #495057;">
+                        🎯 Selecione os Subgrupos (opcional):
+                    </label>
+                    <div id="pdi-subgroups-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                        <!-- Subgrupos serão preenchidos dinamicamente -->
+                    </div>
+                    <small style="display: block; margin-top: 8px; color: #6c757d;">
+                        💡 Selecione grupos acima para ver os subgrupos disponíveis
+                    </small>
+                </div>
+
+                <!-- Botões de Ação -->
+                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                    <button onclick="window.reportsManager.generatePDI()" style="
+                        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: transform 0.2s;
+                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        📋 Gerar PDI
+                    </button>
+                    <button onclick="window.reportsManager.clearPDIFilters()" style="
+                        background: #6c757d;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        cursor: pointer;
+                    ">
+                        🗑️ Limpar Filtros
+                    </button>
+                    <button onclick="window.reportsManager.selectAllLowScores()" style="
+                        background: #28a745;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        cursor: pointer;
+                    ">
+                        ⚡ Selecionar Baixas (1,2,3)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Resultado do PDI -->
+            <div id="pdi-result" style="display: none;">
+                <!-- Resultado será preenchido dinamicamente -->
+            </div>
+        `;
+
+        content.innerHTML = html;
+
+        // Inicializar subgrupos
+        this.updatePDISubgroupFilters();
+    }
+
+    updatePDISubgroupFilters() {
+        const selectedGroups = Array.from(document.querySelectorAll('.pdi-group-filter:checked'))
+            .map(cb => cb.value);
+
+        const subgroupsList = document.getElementById('pdi-subgroups-list');
+        if (!subgroupsList) return;
+
+        if (selectedGroups.length === 0) {
+            subgroupsList.innerHTML = '<p style="color: #6c757d; font-style: italic;">Selecione um ou mais grupos acima</p>';
+            return;
+        }
+
+        let html = '';
+        selectedGroups.forEach(groupName => {
+            const groupData = this.groupMapping[groupName];
+            if (groupData && groupData.subgroups) {
+                groupData.subgroups.forEach(subgroupName => {
+                    html += `
+                        <label style="
+                            display: flex;
+                            align-items: center;
+                            gap: 8px;
+                            padding: 8px 12px;
+                            background: ${groupData.color}20;
+                            border: 1px solid ${groupData.color};
+                            border-radius: 6px;
+                            cursor: pointer;
+                            font-size: 14px;
+                        ">
+                            <input type="checkbox"
+                                class="pdi-subgroup-filter"
+                                value="${subgroupName}"
+                                data-group="${groupName}"
+                                style="width: 16px; height: 16px; cursor: pointer;">
+                            <span style="color: ${groupData.color};">${subgroupName}</span>
+                        </label>
+                    `;
+                });
+            }
+        });
+
+        subgroupsList.innerHTML = html;
+    }
+
+    selectAllLowScores() {
+        // Selecionar pontuações 1, 2 e 3
+        document.querySelectorAll('.pdi-score-filter').forEach(cb => {
+            const score = parseInt(cb.value);
+            cb.checked = (score >= 1 && score <= 3);
+        });
+        this.showNotification('Pontuações baixas (1, 2, 3) selecionadas', 'success');
+    }
+
+    clearPDIFilters() {
+        document.querySelectorAll('.pdi-score-filter, .pdi-group-filter, .pdi-subgroup-filter').forEach(cb => {
+            cb.checked = false;
+        });
+        this.updatePDISubgroupFilters();
+        document.getElementById('pdi-result').style.display = 'none';
+        this.showNotification('Filtros limpos', 'info');
+    }
+
+    generatePDI() {
+        const modal = document.getElementById('pdi-generator-modal');
+        const evaluationData = JSON.parse(modal.dataset.evaluationData);
+
+        // Obter filtros selecionados
+        const selectedScores = Array.from(document.querySelectorAll('.pdi-score-filter:checked'))
+            .map(cb => parseInt(cb.value));
+
+        const selectedGroups = Array.from(document.querySelectorAll('.pdi-group-filter:checked'))
+            .map(cb => cb.value);
+
+        const selectedSubgroups = Array.from(document.querySelectorAll('.pdi-subgroup-filter:checked'))
+            .map(cb => cb.value);
+
+        // Validações
+        if (selectedScores.length === 0) {
+            this.showNotification('Selecione pelo menos uma pontuação', 'error');
+            return;
+        }
+
+        if (selectedGroups.length === 0 && selectedSubgroups.length === 0) {
+            this.showNotification('Selecione pelo menos um grupo ou subgrupo', 'error');
+            return;
+        }
+
+        // Filtrar questões
+        const filteredQuestions = this.filterQuestionsForPDI(
+            evaluationData,
+            selectedScores,
+            selectedGroups,
+            selectedSubgroups
+        );
+
+        // Mostrar resultado
+        this.displayPDIResult(evaluationData, filteredQuestions, selectedScores, selectedGroups, selectedSubgroups);
+    }
+
+    filterQuestionsForPDI(evaluation, selectedScores, selectedGroups, selectedSubgroups) {
+        if (!evaluation.responses) return [];
+
+        const questionDescriptions = this.getQuestionDescriptions();
+        const categoriesConfig = this.getCategoriesConfig();
+        const results = [];
+
+        Object.entries(evaluation.responses).forEach(([questionId, score]) => {
+            const questionNum = parseInt(questionId.replace('q', ''));
+            const scoreValue = parseInt(score);
+
+            // Filtrar por pontuação
+            if (!selectedScores.includes(scoreValue)) {
+                return;
+            }
+
+            // Encontrar categoria e subgrupo da questão
+            let questionCategory = null;
+            let questionSubgroup = null;
+
+            Object.entries(categoriesConfig).forEach(([categoryName, categoryData]) => {
+                Object.entries(categoryData.subgroups).forEach(([subgroupName, subgroupData]) => {
+                    if (questionNum >= subgroupData.range[0] && questionNum <= subgroupData.range[1]) {
+                        questionCategory = categoryName;
+                        questionSubgroup = subgroupName;
+                    }
+                });
+            });
+
+            // Filtrar por grupo
+            if (selectedGroups.length > 0 && !selectedGroups.includes(questionCategory)) {
+                return;
+            }
+
+            // Filtrar por subgrupo (se especificado)
+            if (selectedSubgroups.length > 0 && !selectedSubgroups.includes(questionSubgroup)) {
+                return;
+            }
+
+            // Adicionar questão ao resultado
+            results.push({
+                questionId,
+                questionNum,
+                description: questionDescriptions[questionId] || `Questão ${questionNum}`,
+                score: scoreValue,
+                level: this.getScoreLevel(scoreValue),
+                category: questionCategory,
+                subgroup: questionSubgroup,
+                categoryColor: categoriesConfig[questionCategory]?.color || '#ccc'
+            });
+        });
+
+        // Ordenar por categoria, subgrupo e número
+        results.sort((a, b) => {
+            if (a.category !== b.category) {
+                return a.category.localeCompare(b.category);
+            }
+            if (a.subgroup !== b.subgroup) {
+                return a.subgroup.localeCompare(b.subgroup);
+            }
+            return a.questionNum - b.questionNum;
+        });
+
+        return results;
+    }
+
+    displayPDIResult(evaluation, questions, selectedScores, selectedGroups, selectedSubgroups) {
+        const resultDiv = document.getElementById('pdi-result');
+        if (!resultDiv) return;
+
+        const patientName = evaluation.patientInfo?.name || 'Paciente';
+        const evalDate = evaluation.patientInfo?.evaluationDate || evaluation.createdAt;
+        const formattedDate = new Date(evalDate).toLocaleDateString('pt-BR');
+
+        if (questions.length === 0) {
+            resultDiv.innerHTML = `
+                <div style="
+                    background: #fff3cd;
+                    border: 2px solid #ffc107;
+                    border-radius: 10px;
+                    padding: 20px;
+                    text-align: center;
+                ">
+                    <h3 style="color: #856404; margin-top: 0;">⚠️ Nenhuma questão encontrada</h3>
+                    <p>Não há questões que correspondam aos filtros selecionados.</p>
+                    <p>Tente ajustar os filtros ou selecionar pontuações diferentes.</p>
+                </div>
+            `;
+            resultDiv.style.display = 'block';
+            return;
+        }
+
+        // Agrupar por categoria e subgrupo
+        const grouped = new Map();
+        questions.forEach(q => {
+            if (!grouped.has(q.category)) {
+                grouped.set(q.category, new Map());
+            }
+            if (!grouped.get(q.category).has(q.subgroup)) {
+                grouped.get(q.category).set(q.subgroup, []);
+            }
+            grouped.get(q.category).get(q.subgroup).push(q);
+        });
+
+        let html = `
+            <div style="
+                background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+                padding: 20px;
+                border-radius: 10px;
+                margin-bottom: 20px;
+            ">
+                <h3 style="margin-top: 0;">✅ PDI Gerado com Sucesso!</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                    <div>
+                        <strong>Paciente:</strong> ${patientName}
+                    </div>
+                    <div>
+                        <strong>Data da Avaliação:</strong> ${formattedDate}
+                    </div>
+                    <div>
+                        <strong>Questões Selecionadas:</strong> ${questions.length}
+                    </div>
+                    <div>
+                        <strong>Pontuações:</strong> ${selectedScores.join(', ')}
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button onclick="window.reportsManager.exportPDIToPDF()" style="
+                        background: #dc3545;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        margin-right: 10px;
+                    ">
+                        📄 Exportar PDF
+                    </button>
+                    <button onclick="window.reportsManager.printPDI()" style="
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        cursor: pointer;
+                    ">
+                        🖨️ Imprimir
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Gerar HTML para cada categoria e subgrupo
+        grouped.forEach((subgroupsMap, categoryName) => {
+            const categoryColor = questions.find(q => q.category === categoryName)?.categoryColor || '#ccc';
+
+            html += `
+                <div style="
+                    border-top: 4px solid ${categoryColor};
+                    background: white;
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin-bottom: 20px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                ">
+                    <h3 style="color: ${categoryColor}; margin-top: 0;">${categoryName}</h3>
+            `;
+
+            subgroupsMap.forEach((questionsInSubgroup, subgroupName) => {
+                html += `
+                    <div style="
+                        background: ${categoryColor}10;
+                        border-left: 4px solid ${categoryColor};
+                        padding: 15px;
+                        margin-bottom: 15px;
+                        border-radius: 5px;
+                    ">
+                        <h4 style="color: ${categoryColor}; margin-top: 0;">${subgroupName} (${questionsInSubgroup.length} questões)</h4>
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: ${categoryColor}30;">
+                                    <th style="padding: 10px; text-align: left; width: 70px;">Questão</th>
+                                    <th style="padding: 10px; text-align: left;">Habilidade a Desenvolver</th>
+                                    <th style="padding: 10px; text-align: center; width: 100px;">Pontuação</th>
+                                    <th style="padding: 10px; text-align: center; width: 120px;">Nível</th>
+                                    <th style="padding: 10px; text-align: left; width: 200px;">Estratégia</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                questionsInSubgroup.forEach(question => {
+                    html += `
+                        <tr style="border-bottom: 1px solid #dee2e6;">
+                            <td style="padding: 12px; font-weight: bold;">Q${question.questionNum}</td>
+                            <td style="padding: 12px;">${question.description}</td>
+                            <td style="padding: 12px; text-align: center; font-size: 20px; font-weight: bold;">
+                                ${question.score}/5
+                            </td>
+                            <td style="padding: 12px; text-align: center;">
+                                <span style="
+                                    background: ${question.level.color};
+                                    color: white;
+                                    padding: 5px 10px;
+                                    border-radius: 15px;
+                                    font-size: 12px;
+                                    font-weight: bold;
+                                ">${question.level.label}</span>
+                            </td>
+                            <td style="padding: 12px;">
+                                <textarea placeholder="Descreva a estratégia de intervenção..." style="
+                                    width: 100%;
+                                    min-height: 60px;
+                                    padding: 8px;
+                                    border: 1px solid #ced4da;
+                                    border-radius: 5px;
+                                    font-family: inherit;
+                                    resize: vertical;
+                                "></textarea>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+        });
+
+        resultDiv.innerHTML = html;
+        resultDiv.style.display = 'block';
+
+        // Scroll suave para o resultado
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+        this.showNotification(`PDI gerado com ${questions.length} questões!`, 'success');
+    }
+
+    getCategoriesConfig() {
+        return {
+            'Habilidades Comunicativas': {
+                color: '#667eea',
+                subgroups: {
+                    'Contato Visual': { range: [1, 10] },
+                    'Comunicação Alternativa': { range: [11, 20] },
+                    'Linguagem Expressiva': { range: [21, 30] },
+                    'Linguagem Receptiva': { range: [31, 40] }
+                }
+            },
+            'Habilidades Sociais': {
+                color: '#4facfe',
+                subgroups: {
+                    'Expressão Facial': { range: [41, 50] },
+                    'Imitação': { range: [51, 60] },
+                    'Atenção Compartilhada': { range: [61, 70] },
+                    'Brincar': { range: [71, 80] }
+                }
+            },
+            'Habilidades Funcionais': {
+                color: '#ffecd2',
+                subgroups: {
+                    'Auto Cuidado': { range: [81, 89] },
+                    'Vestir-se': { range: [90, 99] },
+                    'Uso do Banheiro': { range: [100, 109] }
+                }
+            },
+            'Habilidades Emocionais': {
+                color: '#d299c2',
+                subgroups: {
+                    'Controle Inibitório': { range: [110, 119] },
+                    'Flexibilidade': { range: [120, 129] },
+                    'Resposta Emocional': { range: [130, 139] },
+                    'Empatia': { range: [140, 149] }
+                }
+            }
+        };
+    }
+
+    exportPDIToPDF() {
+        this.showNotification('Exportando PDI para PDF...', 'info');
+        // TODO: Implementar exportação real para PDF
+        // Por enquanto, usa a função de impressão do navegador
+        window.print();
+    }
+
+    printPDI() {
+        window.print();
+    }
+
     getQuestionDescriptions() {
         // Descrições completas das 149 questões
         return {

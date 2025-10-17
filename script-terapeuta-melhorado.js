@@ -3664,6 +3664,56 @@ class TerapeutaPanelMelhorado {
         }
     }
 
+    // Método para visualizar detalhes completos de uma avaliação
+    async viewEvaluationDetails(evaluationId) {
+        console.log('🔍 Visualizando detalhes da avaliação:', evaluationId);
+
+        // Buscar a avaliação específica
+        const evaluations = await this.firebaseManager.getAllEvaluations();
+        const evaluation = evaluations.find(e =>
+            e.id === evaluationId ||
+            e.evaluationId === evaluationId ||
+            e.timestamp === evaluationId
+        );
+
+        if (!evaluation) {
+            this.showNotification('Avaliação não encontrada', 'error');
+            return;
+        }
+
+        // Chamar o método do ReportsManager para mostrar os detalhes
+        if (window.reportsManager && typeof window.reportsManager.showEvaluationDetails === 'function') {
+            window.reportsManager.showEvaluationDetails(evaluation);
+        } else {
+            this.showNotification('Sistema de relatórios não disponível', 'error');
+        }
+    }
+
+    // Método para gerar PDI (Plano de Desenvolvimento de Intervenção)
+    async generatePDI(evaluationId) {
+        console.log('📋 Gerando PDI para avaliação:', evaluationId);
+
+        // Buscar a avaliação específica
+        const evaluations = await this.firebaseManager.getAllEvaluations();
+        const evaluation = evaluations.find(e =>
+            e.id === evaluationId ||
+            e.evaluationId === evaluationId ||
+            e.timestamp === evaluationId
+        );
+
+        if (!evaluation) {
+            this.showNotification('Avaliação não encontrada', 'error');
+            return;
+        }
+
+        // Chamar o método do ReportsManager para mostrar o gerador de PDI
+        if (window.reportsManager && typeof window.reportsManager.showPDIGenerator === 'function') {
+            window.reportsManager.showPDIGenerator(evaluation);
+        } else {
+            this.showNotification('Sistema de relatórios não disponível', 'error');
+        }
+    }
+
     exportData() {
         const data = {
             evaluations: this.filteredEvaluations,
