@@ -700,6 +700,11 @@ class TerapeutaPanelMelhorado {
         this.selectedEvaluationId = null;
         this.currentDuplicateIds = new Set();
         this.questionDescriptionsCache = null;
+        this.questionMetadataCache = null;
+        this.categoryStructureCache = null;
+        this.currentPdiResults = [];
+        this.currentPdiEvaluation = null;
+        this.pdiControls = null;
         this.runDeduplication = this.runDeduplication.bind(this);
 
         this.init();
@@ -1421,6 +1426,10 @@ class TerapeutaPanelMelhorado {
             return;
         }
 
+        this.currentPdiEvaluation = null;
+        this.currentPdiResults = [];
+        this.pdiControls = null;
+
         if (!this.selectedEvaluationId) {
             container.innerHTML = `
                 <div class="analytics-empty">
@@ -1510,9 +1519,463 @@ class TerapeutaPanelMelhorado {
             </div>
         `;
 
+        const pdiPanelHtml = this.buildPdiPanelHtml();
         const questionsHtml = this.buildEvaluationQuestionsMarkup(evaluation);
 
-        container.innerHTML = summaryHtml + questionsHtml;
+        container.innerHTML = summaryHtml + pdiPanelHtml + questionsHtml;
+
+        this.setupPdiControls(evaluation);
+    }
+
+    buildPdiPanelHtml() {
+        return `
+            <div class="pdi-panel">
+                <div class="pdi-panel-header">
+                    <h4>Plano de Desenvolvimento de Intervenção (PDI)</h4>
+                    <p>Selecione as respostas que precisam de intervenção e gere um plano personalizado.</p>
+                </div>
+                <div class="pdi-controls">
+                    <div class="pdi-control">
+                        <span class="control-label">Filtrar por pontuação</span>
+                        <div class="pdi-score-options">
+                            <label>
+                                <input type="checkbox" name="pdi-score" value="1" checked>
+                                1 - Nunca ou raramente
+                            </label>
+                            <label>
+                                <input type="checkbox" name="pdi-score" value="2" checked>
+                                2 - Com pouca frequência
+                            </label>
+                            <label>
+                                <input type="checkbox" name="pdi-score" value="3">
+                                3 - Com regular frequência
+                            </label>
+                            <label>
+                                <input type="checkbox" name="pdi-score" value="4">
+                                4 - Muito frequentemente
+                            </label>
+                            <label>
+                                <input type="checkbox" name="pdi-score" value="5">
+                                5 - Sempre ou quase sempre
+                            </label>
+                        </div>
+                    </div>
+                    <div class="pdi-control">
+                        <label for="pdi-group-select" class="control-label">Grupos de habilidades</label>
+                        <select id="pdi-group-select" multiple size="4"></select>
+                        <small class="control-hint">Selecione um ou mais grupos (ou deixe em branco para considerar todos).</small>
+                    </div>
+                    <div class="pdi-control">
+                        <label for="pdi-subgroup-select" class="control-label">Subgrupos</label>
+                        <select id="pdi-subgroup-select" multiple size="6" disabled></select>
+                        <small class="control-hint">Será habilitado após escolher um grupo. Pode selecionar mais de um.</small>
+                    </div>
+                    <div class="pdi-control pdi-actions">
+                        <button type="button" id="pdi-generate" class="btn-primary">Gerar PDI</button>
+                        <button type="button" id="pdi-export" class="btn-secondary" disabled>Exportar CSV</button>
+                    </div>
+                </div>
+                <div id="pdi-results" class="pdi-results">
+                    <div class="analytics-empty">
+                        <h4>Configure os filtros para gerar o PDI</h4>
+                        <p>Escolha as pontuações, grupos e subgrupos que deseja trabalhar. As sugestões aparecerão aqui.</p>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    setupPdiControls(evaluation) {
+        if (!this.analyticsControls) return;
+
+        const detailContainer = this.analyticsControls.evaluationDetailContainer;
+        if (!detailContainer) return;
+
+        const scoreInputs = Array.from(detailContainer.querySelectorAll('input[name="pdi-score"]'));
+        const groupSelect = detailContainer.querySelector('#pdi-group-select');
+        const subgroupSelect = detailContainer.querySelector('#pdi-subgroup-select');
+        const generateButton = detailContainer.querySelector('#pdi-generate');
+        const exportButton = detailContainer.querySelector('#pdi-export');
+        const resultsContainer = detailContainer.querySelector('#pdi-results');
+
+        this.currentPdiEvaluation = evaluation;
+        this.currentPdiResults = [];
+        this.pdiControls = {
+            scoreInputs,
+            groupSelect,
+            subgroupSelect,
+            generateButton,
+            exportButton,
+            resultsContainer
+        };
+
+        if (groupSelect) {
+            this.populatePdiGroupOptions(groupSelect);
+        }
+        if (subgroupSelect) {
+            this.populatePdiSubgroupOptions(subgroupSelect, this.getSelectedOptions(groupSelect));
+        }
+        const regenerate = (event) => {
+            if (event) {
+                event.preventDefault();
+            }
+            this.generatePdiPlan(evaluation);
+        };
+
+        scoreInputs.forEach(input => {
+            input.addEventListener('change', regenerate);
+        });
+
+        if (groupSelect) {
+            groupSelect.addEventListener('change', () => {
+                const selectedGroups = this.getSelectedOptions(groupSelect);
+                this.populatePdiSubgroupOptions(subgroupSelect, selectedGroups);
+                regenerate();
+            });
+        }
+
+        if (subgroupSelect) {
+            subgroupSelect.addEventListener('change', regenerate);
+        }
+
+        if (generateButton) {
+            generateButton.addEventListener('click', regenerate);
+        }
+
+        if (exportButton) {
+            exportButton.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.exportPdiPlan();
+            });
+        }
+
+        regenerate();
+    }
+
+    populatePdiGroupOptions(selectElement) {
+        if (!selectElement) return;
+        const categories = this.getCategoryStructure();
+        const options = categories.map(category => `<option value="${this.escapeHtml(category.key)}">${this.escapeHtml(category.name)}</option>`).join('');
+        selectElement.innerHTML = options;
+    }
+
+    populatePdiSubgroupOptions(selectElement, selectedGroups = []) {
+        if (!selectElement) return;
+        const previousSelection = new Set(this.getSelectedOptions(selectElement));
+        const categories = this.getCategoryStructure();
+        const includeAll = !selectedGroups || selectedGroups.length === 0;
+        const options = [];
+
+        categories.forEach(category => {
+            if (!includeAll && !selectedGroups.includes(category.key)) {
+                return;
+            }
+            category.subgroups.forEach(subgroup => {
+                options.push({
+                    value: subgroup.key,
+                    label: `${category.name} • ${subgroup.name}`,
+                    categoryKey: category.key
+                });
+            });
+        });
+
+        if (options.length === 0) {
+            selectElement.innerHTML = '';
+            selectElement.disabled = true;
+            return;
+        }
+
+        selectElement.innerHTML = options.map(option => `<option value="${this.escapeHtml(option.value)}">${this.escapeHtml(option.label)}</option>`).join('');
+        selectElement.disabled = false;
+
+        const toRestore = options.filter(option => previousSelection.has(option.value));
+        if (toRestore.length) {
+            toRestore.forEach(option => {
+                const opt = Array.from(selectElement.options).find(o => o.value === option.value);
+                if (opt) opt.selected = true;
+            });
+        }
+    }
+
+    getSelectedOptions(selectElement) {
+        if (!selectElement) return [];
+        return Array.from(selectElement.selectedOptions || []).map(option => option.value);
+    }
+
+    generatePdiPlan(evaluation) {
+        if (!this.pdiControls) return;
+
+        const { scoreInputs, groupSelect, subgroupSelect, resultsContainer, exportButton } = this.pdiControls;
+        if (!resultsContainer) return;
+
+        const selectedScores = new Set(
+            (scoreInputs || [])
+                .filter(input => input.checked)
+                .map(input => parseInt(input.value, 10))
+                .filter(value => Number.isFinite(value))
+        );
+
+        if ((scoreInputs || []).length && selectedScores.size === 0) {
+            resultsContainer.innerHTML = `
+                <div class="analytics-empty">
+                    <h4>Nenhuma pontuação selecionada</h4>
+                    <p>Escolha ao menos uma pontuação (1 a 5) para gerar o PDI.</p>
+                </div>
+            `;
+            this.currentPdiResults = [];
+            if (exportButton) exportButton.disabled = true;
+            return;
+        }
+
+        const selectedGroups = new Set(this.getSelectedOptions(groupSelect));
+        const selectedSubgroups = new Set(this.getSelectedOptions(subgroupSelect));
+
+        const metadataMap = this.getQuestionMetadata();
+        const responsesMap = this.mapResponsesByQuestion(evaluation);
+        const descriptions = this.getQuestionDescriptions();
+        const categories = this.getCategoryStructure();
+        const categoryLookup = new Map(categories.map(category => [category.key, category]));
+        const subgroupLookup = new Map();
+        categories.forEach(category => {
+            category.subgroups.forEach(subgroup => {
+                subgroupLookup.set(subgroup.key, { ...subgroup, categoryKey: category.key, categoryName: category.name, categoryColor: category.color });
+            });
+        });
+
+        const results = [];
+
+        for (let questionNum = 1; questionNum <= 149; questionNum++) {
+            const responseEntry = responsesMap.get(questionNum);
+            const metadata = metadataMap.get(questionNum);
+            if (!metadata) continue;
+
+            const score = responseEntry?.score ?? null;
+            if (score === null || !Number.isFinite(score)) continue;
+
+            if (selectedScores.size > 0 && !selectedScores.has(score)) {
+                continue;
+            }
+
+            if (selectedGroups.size > 0 && !selectedGroups.has(metadata.categoryKey)) {
+                continue;
+            }
+
+            if (selectedSubgroups.size > 0 && !selectedSubgroups.has(metadata.subgroupKey)) {
+                continue;
+            }
+
+            const description = responseEntry?.question || descriptions[`q${questionNum}`] || `Questão ${questionNum}`;
+            const level = this.getScoreLevel(score);
+
+            results.push({
+                questionNum,
+                questionId: `q${questionNum}`,
+                description,
+                score,
+                level,
+                categoryKey: metadata.categoryKey,
+                categoryName: metadata.categoryName,
+                categoryColor: metadata.categoryColor,
+                categoryIndex: metadata.categoryIndex,
+                subgroupKey: metadata.subgroupKey,
+                subgroupName: metadata.subgroupName,
+                subgroupIndex: metadata.subgroupIndex
+            });
+        }
+
+        results.sort((a, b) => {
+            if (a.categoryIndex !== b.categoryIndex) return a.categoryIndex - b.categoryIndex;
+            if (a.subgroupIndex !== b.subgroupIndex) return a.subgroupIndex - b.subgroupIndex;
+            return a.questionNum - b.questionNum;
+        });
+
+        this.currentPdiResults = results;
+        this.currentPdiEvaluation = evaluation;
+
+        if (exportButton) {
+            exportButton.disabled = results.length === 0;
+        }
+
+        this.renderPdiResults(results, {
+            scores: selectedScores,
+            groups: selectedGroups,
+            subgroups: selectedSubgroups
+        });
+    }
+
+    renderPdiResults(results, filters) {
+        if (!this.pdiControls?.resultsContainer) return;
+        const container = this.pdiControls.resultsContainer;
+
+        if (!results.length) {
+            container.innerHTML = `
+                <div class="analytics-empty">
+                    <h4>Nenhuma questão corresponde aos filtros</h4>
+                    <p>Ajuste as pontuações, grupos ou subgrupos para encontrar as habilidades que precisam de intervenção.</p>
+                </div>
+            `;
+            return;
+        }
+
+        const categories = this.getCategoryStructure();
+        const categoryLookup = new Map(categories.map(category => [category.key, category]));
+        const grouped = new Map();
+
+        results.forEach(item => {
+            if (!grouped.has(item.categoryKey)) {
+                grouped.set(item.categoryKey, new Map());
+            }
+            const subgroups = grouped.get(item.categoryKey);
+            if (!subgroups.has(item.subgroupKey)) {
+                subgroups.set(item.subgroupKey, []);
+            }
+            subgroups.get(item.subgroupKey).push(item);
+        });
+
+        const selectedScoresLabel = filters.scores && filters.scores.size > 0
+            ? Array.from(filters.scores).sort().map(score => `${score}`).join(', ')
+            : 'todas as pontuações';
+
+        const selectedGroupsLabel = filters.groups && filters.groups.size > 0
+            ? Array.from(filters.groups).map(key => categoryLookup.get(key)?.name || key).join(', ')
+            : 'todos os grupos';
+
+        const selectedSubgroupsLabel = filters.subgroups && filters.subgroups.size > 0
+            ? `${filters.subgroups.size} selecionado(s)`
+            : 'todos os subgrupos';
+
+        const scoreCounts = {};
+        results.forEach(item => {
+            scoreCounts[item.score] = (scoreCounts[item.score] || 0) + 1;
+        });
+
+        const scoreSummary = Object.keys(scoreCounts)
+            .map(value => parseInt(value, 10))
+            .filter(value => Number.isFinite(value))
+            .sort((a, b) => a - b)
+            .map(score => {
+                const level = this.getScoreLevel(score);
+                return `<span class="score-pill" style="background:${level.color}">Nota ${score}: ${scoreCounts[score]}</span>`;
+            }).join('');
+
+        let html = `
+            <div class="pdi-summary">
+                <div><strong>${results.length}</strong> questão(ões) selecionadas para intervenção.</div>
+                <div class="pdi-summary-filters">
+                    <span>Notas: ${this.escapeHtml(selectedScoresLabel)}</span>
+                    <span>Grupos: ${this.escapeHtml(selectedGroupsLabel)}</span>
+                    <span>Subgrupos: ${this.escapeHtml(selectedSubgroupsLabel)}</span>
+                </div>
+                <div class="pdi-score-summary">${scoreSummary}</div>
+            </div>
+        `;
+
+        categories.forEach(category => {
+            if (!grouped.has(category.key)) {
+                return;
+            }
+            const subgroupsMap = grouped.get(category.key);
+            html += `
+                <div class="evaluation-category-card pdi-category-card" style="border-top: 3px solid ${category.color};">
+                    <h4 style="margin-top:0; color:${category.color};">${this.escapeHtml(category.name)}</h4>
+            `;
+
+            category.subgroups.forEach(subgroup => {
+                const items = subgroupsMap.get(subgroup.key);
+                if (!items || !items.length) {
+                    return;
+                }
+
+                const total = items.reduce((sum, item) => sum + (item.score || 0), 0);
+                const max = items.length * 5;
+                const percentage = max > 0 ? Math.round((total / max) * 100) : 0;
+
+                html += `
+                    <div class="evaluation-subgroup-card pdi-subgroup-card" style="border-left-color:${category.color}; background:${category.color}10;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                            <div>
+                                <strong>${this.escapeHtml(subgroup.name)}</strong>
+                                <small style="display:block; color:#718096;">${items.length} questão(ões)</small>
+                            </div>
+                            <div style="text-align:right;">
+                                <div style="font-size:22px; font-weight:700; color:${category.color};">${percentage}%</div>
+                                <div style="font-size:12px; color:#4a5568;">${total}/${max} pontos</div>
+                            </div>
+                        </div>
+                        <table class="pdi-result-table">
+                            <thead>
+                                <tr>
+                                    <th>Questão</th>
+                                    <th>Descrição</th>
+                                    <th style="text-align:center;">Pontuação</th>
+                                    <th style="text-align:center;">Classificação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${items.map(item => `
+                                    <tr>
+                                        <td style="font-weight:600;">Q${item.questionNum}</td>
+                                        <td>${this.escapeHtml(item.description)}</td>
+                                        <td style="text-align:center; font-weight:600;">${item.score}/5</td>
+                                        <td style="text-align:center;">
+                                            <span class="score-badge" style="background:${item.level.color}">${this.escapeHtml(item.level.label)}</span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+        });
+
+        container.innerHTML = html;
+    }
+
+    exportPdiPlan() {
+        if (!this.currentPdiResults || this.currentPdiResults.length === 0) {
+            this.showNotification('Nenhum dado para exportar. Ajuste os filtros do PDI.', 'warning');
+            return;
+        }
+
+        const evaluation = this.currentPdiEvaluation;
+        const patientName = evaluation?.patientInfo?.name || '';
+        const evaluatorName = evaluation?.evaluatorInfo?.name || evaluation?.patientInfo?.evaluatorName || '';
+        const evaluationDate = this.parseEvaluationDate(evaluation);
+        const formattedDate = evaluationDate ? evaluationDate.toLocaleDateString('pt-BR') : (evaluation?.patientInfo?.evaluationDate || '');
+        const source = this.formatEvaluationSource(evaluation || {});
+
+        const csvEscape = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+        let csvContent = 'data:text/csv;charset=utf-8,';
+        csvContent += 'Paciente,Data,Avaliador,Origem,Questao,Descricao,Grupo,Subgrupo,Pontuacao,Classificacao\n';
+
+        this.currentPdiResults.forEach(item => {
+            csvContent += [
+                csvEscape(patientName),
+                csvEscape(formattedDate),
+                csvEscape(evaluatorName),
+                csvEscape(source),
+                csvEscape(`Q${item.questionNum}`),
+                csvEscape(item.description),
+                csvEscape(item.categoryName),
+                csvEscape(item.subgroupName),
+                csvEscape(item.score),
+                csvEscape(item.level.label)
+            ].join(',') + '\n';
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const fileName = `pdi_${patientName.replace(/\s+/g, '_')}_${this.selectedEvaluationId || 'avaliacao'}.csv`;
+        const link = document.createElement('a');
+        link.setAttribute('href', encodedUri);
+        link.setAttribute('download', fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        this.showNotification('PDI exportado com sucesso.', 'success');
     }
 
     formatEvaluationOptionLabel(evaluation) {
@@ -1678,7 +2141,11 @@ class TerapeutaPanelMelhorado {
     }
 
     getCategoryStructure() {
-        return [
+        if (this.categoryStructureCache) {
+            return this.categoryStructureCache;
+        }
+
+        const categories = [
             {
                 key: 'habilidades-comunicativas',
                 name: 'Habilidades Comunicativas',
@@ -1723,6 +2190,55 @@ class TerapeutaPanelMelhorado {
                 ]
             }
         ];
+
+        categories.forEach((category, categoryIndex) => {
+            category.index = categoryIndex;
+            category.subgroups = category.subgroups.map((subgroup, subgroupIndex) => ({
+                ...subgroup,
+                key: `${category.key}__${this.slugify(subgroup.name)}`,
+                index: subgroupIndex
+            }));
+        });
+
+        this.categoryStructureCache = categories;
+        return categories;
+    }
+
+    slugify(value) {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+    }
+
+    getQuestionMetadata() {
+        if (this.questionMetadataCache) {
+            return this.questionMetadataCache;
+        }
+
+        const categories = this.getCategoryStructure();
+        const map = new Map();
+
+        categories.forEach(category => {
+            category.subgroups.forEach(subgroup => {
+                for (let num = subgroup.start; num <= subgroup.end; num++) {
+                    map.set(num, {
+                        categoryKey: category.key,
+                        categoryName: category.name,
+                        categoryColor: category.color,
+                        categoryIndex: category.index,
+                        subgroupKey: subgroup.key,
+                        subgroupName: subgroup.name,
+                        subgroupIndex: subgroup.index
+                    });
+                }
+            });
+        });
+
+        this.questionMetadataCache = map;
+        return map;
     }
 
     mapResponsesByQuestion(evaluation) {
@@ -1796,11 +2312,14 @@ class TerapeutaPanelMelhorado {
     }
 
     getScoreLevel(score) {
-        if (score >= 5) return { label: 'Excelente', color: '#2f855a' };
-        if (score >= 4) return { label: 'Bom', color: '#38a169' };
-        if (score >= 3) return { label: 'Regular', color: '#dd6b20' };
-        if (score >= 2) return { label: 'Baixo', color: '#ed8936' };
-        return { label: 'Muito baixo', color: '#e53e3e' };
+        const levels = {
+            5: { label: 'Sempre ou quase sempre', color: '#2f855a' },
+            4: { label: 'Muito frequentemente', color: '#38a169' },
+            3: { label: 'Com regular frequência', color: '#dd6b20' },
+            2: { label: 'Com pouca frequência', color: '#ed8936' },
+            1: { label: 'Nunca ou raramente', color: '#e53e3e' }
+        };
+        return levels[score] || { label: 'Sem classificação', color: '#a0aec0' };
     }
 
     updateAnalyticsResults(force = false) {
