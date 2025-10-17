@@ -1121,6 +1121,8 @@ class ReportsManager {
 
     async exportToPDF(reportType) {
         console.log(`📄 Exportando relatório ${reportType} para PDF...`);
+        console.log(`📊 Estado atual - currentData:`, this.currentData?.length || 0, 'avaliações');
+        console.log(`📊 Charts disponíveis:`, Object.keys(this.charts));
 
         // Mostrar loading
         this.showNotification('⏳ Gerando relatório PDF...', 'info');
@@ -1135,8 +1137,12 @@ class ReportsManager {
 
             try {
                 // Verificar se há dados
-                if (!this.evaluations || this.evaluations.length === 0) {
-                    this.showNotification('❌ Nenhum dado disponível para gerar relatório. Por favor, carregue os dados primeiro.', 'error');
+                if (!this.currentData || this.currentData.length === 0) {
+                    this.showNotification('❌ Nenhum dado disponível para gerar relatório. Por favor, carregue os dados primeiro clicando em "🔄 Atualizar" no painel principal.', 'error');
+                    console.error('❌ ReportsManager: Sem dados.');
+                    console.error('   - currentData:', this.currentData);
+                    console.error('   - currentData.length:', this.currentData?.length);
+                    console.error('   - Solução: Clique em "🔄 Atualizar" no painel do terapeuta para carregar os dados.');
                     return;
                 }
 
@@ -1152,8 +1158,38 @@ class ReportsManager {
                 }
 
                 if (!hasCharts) {
-                    this.showNotification('❌ Por favor, gere os relatórios primeiro clicando nas abas acima e depois tente exportar.', 'warning');
-                    return;
+                    console.log('📊 Gráficos não encontrados, gerando automaticamente...');
+                    this.showNotification('⏳ Gerando gráficos antes de exportar PDF...', 'info');
+
+                    // Gerar todos os relatórios automaticamente
+                    try {
+                        await this.generateAllReports();
+
+                        // Aguardar um pouco para os gráficos renderizarem
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+
+                        // Verificar novamente se os gráficos foram criados
+                        let chartsCreated = false;
+                        for (const chartInfo of chartsToCapture) {
+                            if (this.charts[chartInfo.canvasId]) {
+                                chartsCreated = true;
+                                break;
+                            }
+                        }
+
+                        if (!chartsCreated) {
+                            this.showNotification('❌ Erro ao gerar gráficos. Por favor, tente novamente.', 'error');
+                            console.error('❌ ReportsManager: Falha ao gerar gráficos automaticamente.');
+                            return;
+                        }
+
+                        console.log('✅ Gráficos gerados com sucesso, continuando exportação PDF...');
+                        this.showNotification('⏳ Gerando relatório PDF...', 'info');
+                    } catch (error) {
+                        this.showNotification('❌ Erro ao gerar gráficos: ' + error.message, 'error');
+                        console.error('❌ ReportsManager: Erro ao gerar gráficos:', error);
+                        return;
+                    }
                 }
 
                 const { jsPDF } = window.jspdf;

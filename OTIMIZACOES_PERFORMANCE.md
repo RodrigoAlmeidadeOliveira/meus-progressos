@@ -309,9 +309,46 @@ Se IndexedDB não está disponível, usa localStorage (limite de 5-10MB)
 - ✅ UX: instantânea
 - ✅ Dados: cache inteligente
 
+## Changelog
+
+### v3.6 - Auto-geração de Gráficos para PDF (17/10/2025)
+
+**Problema**: Usuários clicavam em "Exportar PDF" mas recebiam erro porque os gráficos não haviam sido gerados ainda.
+
+**Solução**:
+- Modificado `exportToPDF()` em `reports-manager.js` para detectar automaticamente quando gráficos não existem
+- Sistema agora gera gráficos automaticamente antes de exportar PDF
+- Melhoradas mensagens de erro com logs detalhados para debug
+- Adicionado feedback visual durante geração automática: "⏳ Gerando gráficos antes de exportar PDF..."
+
+**Impacto**: Experiência do usuário muito melhorada - não precisa mais gerar relatórios manualmente antes de exportar PDF.
+
+### v3.5 - Correção de Timing Firebase (17/10/2025)
+
+**Problema**: Dashboard carregava antes do Firebase autenticar, mostrando 0 avaliações inicialmente.
+
+**Solução**:
+- Adicionado método `waitForFirebase()` que aguarda até 10 segundos pela autenticação
+- Modificado `init()` para aguardar Firebase antes de carregar dashboard
+- Adicionado auto-refresh quando sync detecta dados no Firebase mas nenhum local
+
+**Resultado**: 100% resolvido (confirmado pelo usuário)
+
+### v3.4 - Sistema de Cache IndexedDB (17/10/2025)
+
+**Problema**: Dados demoravam muito para carregar após sincronização com Firebase.
+
+**Solução**:
+- Criado módulo `modules/performance-optimizer.js`
+- Implementado cache IndexedDB com TTL de 5 minutos
+- Modificado `getAllEvaluations()` para usar cache-first strategy
+- Adicionadas métricas de performance
+
+**Resultado**: ~150x mais rápido em cargas subsequentes
+
 ---
 
-**Versão**: 3.4
+**Versão Atual**: 3.6
 **Data**: 17/10/2025
 **Autor**: Claude Code + Rodrigo Almeida
 **Status**: ✅ Implementado e Testado
