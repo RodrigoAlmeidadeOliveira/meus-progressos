@@ -342,6 +342,22 @@ function updateAnalyticsResults(force = false) {
     const totalPatients = new Set(filtered.map(item => (item.patientInfo?.name || '').toLowerCase().trim())).size;
     const metricLabel = this.getMetricLabel(metric);
 
+    const summaryTableHtml = this.renderAnalyticsSummaryTable(orderedRows, grouping, metric);
+    const detailedTable = this.renderAnalyticsDetailedTable(filtered, duplicateIds);
+
+    const detailSection = `
+        <div class="analytics-block">
+            <div class="analytics-block-header">
+                <h4>Detalhamento das Respostas</h4>
+                <span class="analytics-metric-badge">${this.escapeHtml(detailedTable.countLabel)}</span>
+            </div>
+            <div class="analytics-summary-info">
+                <p>Use os filtros para refinar o recorte e clique em “Gerar PDI” no painel ao lado para transformar essas respostas em um plano de intervenção.</p>
+            </div>
+            ${detailedTable.html}
+        </div>
+    `;
+
     container.innerHTML = `
         ${duplicateBanner}
         <div class="analytics-block">
@@ -354,6 +370,8 @@ function updateAnalyticsResults(force = false) {
                 <p>Use o seletor de paciente/avaliação ao lado para explorar cada formulário completo ou gere um PDI com os filtros desejados.</p>
             </div>
         </div>
+        ${summaryTableHtml}
+        ${detailSection}
     `;
 
     this.updateAnalyticsSummary(orderedRows, filtered, metric, grouping);
