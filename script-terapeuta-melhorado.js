@@ -2362,38 +2362,28 @@ class TerapeutaPanelMelhorado {
         const rows = this.aggregateAnalyticsData(filtered, grouping);
         const orderedRows = rows.length ? this.sortAnalyticsRows(rows, metric) : [];
         
-        const summaryHtml = rows.length
-            ? this.renderAnalyticsSummaryTable(orderedRows, grouping, metric)
-            : `
-                <div class="analytics-empty">
-                    <h4>Resumo não disponível</h4>
-                    <p>Não foi possível calcular métricas agregadas para o filtro atual.</p>
-                </div>
-              `;
-
         const duplicates = this.findDuplicateEvaluations(filtered);
         const duplicateIds = new Set(duplicates.map(item => item.id));
         this.currentDuplicateIds = duplicateIds;
-        const detailTable = this.renderAnalyticsDetailedTable(filtered, duplicateIds);
         const duplicateBanner = duplicates.length
             ? this.renderDuplicateBanner(duplicates)
             : '';
+
+        const totalEvaluations = filtered.length;
+        const totalPatients = new Set(filtered.map(item => (item.patientInfo?.name || '').toLowerCase().trim())).size;
+        const metricLabel = this.getMetricLabel(metric);
 
         container.innerHTML = `
             ${duplicateBanner}
             <div class="analytics-block">
                 <div class="analytics-block-header">
                     <h4>Resumo Analítico</h4>
-                    <span class="analytics-metric-badge">Ordenado por: ${this.getMetricLabel(metric)}</span>
+                    <span class="analytics-metric-badge">${this.escapeHtml(metricLabel)}</span>
                 </div>
-                ${summaryHtml}
-            </div>
-            <div class="analytics-block">
-                <div class="analytics-block-header">
-                    <h4>Respostas Detalhadas</h4>
-                    <span class="analytics-metric-badge">${detailTable.countLabel}</span>
+                <div class="analytics-summary-info">
+                    <p><strong>${totalEvaluations}</strong> avaliação(ões) atendem ao filtro atual, distribuídas entre <strong>${totalPatients}</strong> paciente(s).</p>
+                    <p>Use o seletor de paciente/avaliação ao lado para explorar cada formulário completo ou gere um PDI com os filtros desejados.</p>
                 </div>
-                ${detailTable.html}
             </div>
         `;
 
