@@ -81,6 +81,29 @@
     gap: 24px;
 }
 
+.is-highlighted {
+    outline: 3px solid rgba(66, 153, 225, 0.45);
+    outline-offset: 6px;
+    transition: outline-color 0.6s ease;
+}
+
+@media (min-width: 1024px) {
+    .workspace {
+        display: grid;
+        grid-template-columns: 320px minmax(0, 1fr);
+        align-items: flex-start;
+    }
+
+    .workspace-sidebar {
+        position: sticky;
+        top: 24px;
+    }
+
+    .workspace-main {
+        min-width: 0;
+    }
+}
+
 .module-card {
     background: #ffffff;
     border-radius: 16px;
@@ -145,37 +168,101 @@
     display: flex;
 }
 
-.helper-card .helper-list {
+.insights-card .insight-list {
     list-style: none;
     padding: 0;
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 14px;
+}
+
+.insight-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background: #f8fafc;
+}
+
+.insight-item__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.insight-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #4a5568;
+    letter-spacing: 0.04em;
+}
+
+.insight-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.insight-badge.is-online {
+    background: #c6f6d5;
+    color: #2f855a;
+}
+
+.insight-badge.is-offline {
+    background: #fed7d7;
+    color: #c53030;
+}
+
+.insight-badge.is-warning {
+    background: #fefcbf;
+    color: #975a16;
+}
+
+.insight-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.insight-note {
+    font-size: 12px;
+    color: #4a5568;
+    margin: 0;
+}
+
+.insight-actions {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .link-button {
     background: none;
     border: none;
-    color: #3182ce;
+    color: #2b6cb0;
     font-weight: 600;
     cursor: pointer;
     text-align: left;
     padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .link-button:hover {
     text-decoration: underline;
-}
-
-.helper-hint {
-    margin-top: 14px;
-    font-size: 12px;
-    color: #4a5568;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 10px;
-    padding: 12px;
 }
 
 /* Dashboard Layout */

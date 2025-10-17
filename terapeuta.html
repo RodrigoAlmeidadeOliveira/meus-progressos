@@ -89,18 +89,38 @@
                     </div>
                 </section>
 
-                <section class="module-card helper-card" id="quick-insights">
+                <section class="module-card insights-card" id="quick-insights">
                     <header class="module-card__header">
-                        <h3>⚙️ Ações rápidas</h3>
+                        <h3>⚡ Insights rápidos</h3>
                     </header>
                     <div class="module-card__body">
-                        <ul class="helper-list">
-                            <li><button type="button" class="link-button" data-trigger-nav="analytics-panel">Gerar consulta analítica</button></li>
-                            <li><button type="button" class="link-button" data-trigger-nav="patients-panel">Gerenciar pacientes</button></li>
-                            <li><button type="button" class="link-button" data-trigger-nav="reports-panel">Abrir relatórios</button></li>
+                        <ul class="insight-list">
+                            <li class="insight-item">
+                                <div class="insight-item__meta">
+                                    <span class="insight-label">Status da conexão</span>
+                                    <span class="insight-badge" id="insight-connection-status" data-default-label="Status">Verificando...</span>
+                                </div>
+                                <p class="insight-note">Sincronizamos automaticamente assim que o Firebase responder.</p>
+                            </li>
+                            <li class="insight-item">
+                                <div class="insight-item__meta">
+                                    <span class="insight-label">Avaliações pendentes</span>
+                                    <span class="insight-value" id="insight-pending-queue">-</span>
+                                </div>
+                                <p class="insight-note">Conclua a sincronização para liberar espaço local.</p>
+                            </li>
+                            <li class="insight-item">
+                                <div class="insight-item__meta">
+                                    <span class="insight-label">Última atualização</span>
+                                    <span class="insight-value" id="insight-last-sync">-</span>
+                                </div>
+                                <p class="insight-note">Recarregue os dados se notar diferenças.</p>
+                            </li>
                         </ul>
-                        <div class="helper-hint">
-                            💡 Dica: utilize os filtros globais para preparar análises e gerar PDIs focados.
+                        <div class="insight-actions">
+                            <button type="button" class="link-button" data-trigger-nav="dashboard-panel" data-focus-target="#patients-list">👥 Acessar pacientes</button>
+                            <button type="button" class="link-button" data-trigger-nav="analytics-panel">📊 Abrir consulta analítica</button>
+                            <button type="button" class="link-button" data-trigger-nav="pdi-panel">🧠 Preparar PDI</button>
                         </div>
                     </div>
                 </section>
@@ -108,15 +128,16 @@
 
             <main class="workspace-main">
                 <nav class="workspace-nav" id="workspace-nav" role="tablist">
-                    <button type="button" class="nav-link is-active" data-panel="analytics-panel">Consulta Analítica</button>
-                    <button type="button" class="nav-link" data-panel="patients-panel">Pacientes &amp; Evolução</button>
+                    <button type="button" class="nav-link is-active" data-panel="dashboard-panel">Dashboard</button>
+                    <button type="button" class="nav-link" data-panel="analytics-panel">Consulta Analítica</button>
+                    <button type="button" class="nav-link" data-panel="pdi-panel">PDI</button>
                     <button type="button" class="nav-link" data-panel="reports-panel">Relatórios</button>
                 </nav>
 
-                <section id="analytics-panel" class="workspace-panel is-active" role="tabpanel">
+                <section id="dashboard-panel" class="workspace-panel is-active" role="tabpanel">
                     <section class="module-card filters-card filters-section" id="filters-card">
                         <header class="module-card__header">
-                            <h3>🔍 Filtros de Busca</h3>
+                            <h3>🔍 Filtros Globais</h3>
                         </header>
                         <div class="module-card__body">
                             <div class="filters-grid">
@@ -148,123 +169,6 @@
                         </div>
                     </section>
 
-                    <section class="module-card analytics-card analytics-section" id="analytics-menu">
-                        <header class="module-card__header analytics-header">
-                            <div class="module-card__title">
-                                <h3>📊 Consulta Analítica</h3>
-                                <p>Explore avaliações e identifique oportunidades de intervenção.</p>
-                            </div>
-                            <div class="analytics-summary">
-                                <div class="summary-card">
-                                    <span class="summary-value" id="analytics-total-selected">0</span>
-                                    <span class="summary-label">Avaliações filtradas</span>
-                                </div>
-                                <div class="summary-card">
-                                    <span class="summary-value" id="analytics-average-percent">0%</span>
-                                    <span class="summary-label">Pontuação média</span>
-                                </div>
-                                <div class="summary-card">
-                                    <span class="summary-value" id="analytics-best-group">-</span>
-                                    <span class="summary-label">Destaque</span>
-                                </div>
-                            </div>
-                        </header>
-                        <div class="module-card__body">
-                            <div class="analytics-filters">
-                                <div class="filter-group">
-                                    <label for="analytics-grouping">Agrupar por:</label>
-                                    <select id="analytics-grouping">
-                                        <option value="patient">Paciente</option>
-                                        <option value="evaluator">Avaliador</option>
-                                        <option value="category">Categoria de habilidades</option>
-                                        <option value="subgroup">Subgrupo de habilidades</option>
-                                        <option value="month">Mês/Ano</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-metric">Ordenar por:</label>
-                                    <select id="analytics-metric">
-                                        <option value="averagePercent">Pontuação média (%)</option>
-                                        <option value="averageScore">Pontuação média (total)</option>
-                                        <option value="count">Número de avaliações</option>
-                                        <option value="lastScore">Última pontuação (%)</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-patient">Filtrar paciente:</label>
-                                    <select id="analytics-patient">
-                                        <option value="">Todos os pacientes</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-evaluator">Filtrar avaliador:</label>
-                                    <select id="analytics-evaluator">
-                                        <option value="">Todos os avaliadores</option>
-                                    </select>
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-date-from">Data inicial:</label>
-                                    <input type="date" id="analytics-date-from">
-                                </div>
-                                <div class="filter-group">
-                                    <label for="analytics-date-to">Data final:</label>
-                                    <input type="date" id="analytics-date-to">
-                                </div>
-                            </div>
-
-                            <div class="analytics-actions">
-                                <button type="button" id="analytics-clear" class="btn-secondary">🧹 Limpar filtros</button>
-                                <button type="button" id="analytics-run" class="btn-primary">📈 Gerar análise</button>
-                            </div>
-
-                            <div class="analytics-summary-info">
-                                <p>Use os filtros para entender tendências e, quando necessário, selecione uma avaliação para gerar o PDI correspondente.</p>
-                            </div>
-
-                            <div class="analytics-detail-controls">
-                                <div class="detail-heading">
-                                    <h4>Visualização por Avaliação</h4>
-                                    <p>Selecione um paciente e uma avaliação para ver todas as respostas e preparar o PDI.</p>
-                                </div>
-                                <div class="detail-grid">
-                                    <div class="filter-group">
-                                        <label for="analytics-detail-patient">Paciente:</label>
-                                        <select id="analytics-detail-patient">
-                                            <option value="">Selecione um paciente...</option>
-                                        </select>
-                                    </div>
-                                    <div class="filter-group">
-                                        <label for="analytics-detail-evaluation">Avaliação:</label>
-                                        <select id="analytics-detail-evaluation" disabled>
-                                            <option value="">Selecione uma avaliação...</option>
-                                        </select>
-                                    </div>
-                                    <div class="detail-actions">
-                                        <button type="button" id="analytics-export-evaluation" class="btn-secondary" disabled>
-                                            💾 Exportar avaliação
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="analytics-evaluation-detail" class="analytics-evaluation-detail">
-                                <div class="analytics-empty">
-                                    <h4>Nenhuma avaliação selecionada</h4>
-                                    <p>Escolha um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
-                                </div>
-                            </div>
-
-                            <div class="analytics-results" id="analytics-results">
-                                <div class="analytics-empty">
-                                    <h4>Comece uma análise</h4>
-                                    <p>Selecione como deseja agrupar os dados e, se necessário, aplique filtros adicionais.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
-                </section>
-
-                <section id="patients-panel" class="workspace-panel" role="tabpanel">
                     <section class="module-card patients-section">
                         <header class="module-card__header">
                             <h3>👥 Lista de Pacientes</h3>
@@ -336,6 +240,132 @@
                                         <h5>Radar de Habilidades</h5>
                                         <canvas id="skillsRadarChart"></canvas>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <section id="analytics-panel" class="workspace-panel" role="tabpanel">
+                    <section class="module-card analytics-card analytics-section" id="analytics-menu">
+                        <header class="module-card__header analytics-header">
+                            <div class="module-card__title">
+                                <h3>📊 Consulta Analítica</h3>
+                                <p>Explore avaliações e identifique oportunidades de intervenção.</p>
+                            </div>
+                            <div class="analytics-summary">
+                                <div class="summary-card">
+                                    <span class="summary-value" id="analytics-total-selected">0</span>
+                                    <span class="summary-label">Avaliações filtradas</span>
+                                </div>
+                                <div class="summary-card">
+                                    <span class="summary-value" id="analytics-average-percent">0%</span>
+                                    <span class="summary-label">Pontuação média</span>
+                                </div>
+                                <div class="summary-card">
+                                    <span class="summary-value" id="analytics-best-group">-</span>
+                                    <span class="summary-label">Destaque</span>
+                                </div>
+                            </div>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="analytics-filters">
+                                <div class="filter-group">
+                                    <label for="analytics-grouping">Agrupar por:</label>
+                                    <select id="analytics-grouping">
+                                        <option value="patient">Paciente</option>
+                                        <option value="evaluator">Avaliador</option>
+                                        <option value="category">Categoria de habilidades</option>
+                                        <option value="subgroup">Subgrupo de habilidades</option>
+                                        <option value="month">Mês/Ano</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-metric">Ordenar por:</label>
+                                    <select id="analytics-metric">
+                                        <option value="averagePercent">Pontuação média (%)</option>
+                                        <option value="averageScore">Pontuação média (total)</option>
+                                        <option value="count">Número de avaliações</option>
+                                        <option value="lastScore">Última pontuação (%)</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-patient">Filtrar paciente:</label>
+                                    <select id="analytics-patient">
+                                        <option value="">Todos os pacientes</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-evaluator">Filtrar avaliador:</label>
+                                    <select id="analytics-evaluator">
+                                        <option value="">Todos os avaliadores</option>
+                                    </select>
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-date-from">Data inicial:</label>
+                                    <input type="date" id="analytics-date-from">
+                                </div>
+                                <div class="filter-group">
+                                    <label for="analytics-date-to">Data final:</label>
+                                    <input type="date" id="analytics-date-to">
+                                </div>
+                            </div>
+
+                            <div class="analytics-actions">
+                                <button type="button" id="analytics-clear" class="btn-secondary">🧹 Limpar filtros</button>
+                                <button type="button" id="analytics-run" class="btn-primary">📈 Gerar análise</button>
+                            </div>
+
+                            <div class="analytics-summary-info">
+                                <p>Use os filtros para entender tendências e validar a qualidade das avaliações coletadas.</p>
+                            </div>
+
+                            <div class="analytics-results" id="analytics-results">
+                                <div class="analytics-empty">
+                                    <h4>Comece uma análise</h4>
+                                    <p>Selecione como deseja agrupar os dados e, se necessário, aplique filtros adicionais.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </section>
+
+                <section id="pdi-panel" class="workspace-panel" role="tabpanel">
+                    <section class="module-card pdi-card">
+                        <header class="module-card__header">
+                            <h3>🧠 Planejamento PDI</h3>
+                        </header>
+                        <div class="module-card__body">
+                            <div class="analytics-detail-controls">
+                                <div class="detail-heading">
+                                    <h4>Selecionar avaliação</h4>
+                                    <p>Escolha um paciente e uma avaliação para gerar o plano de intervenção e revisar cada pergunta.</p>
+                                </div>
+                                <div class="detail-grid">
+                                    <div class="filter-group">
+                                        <label for="analytics-detail-patient">Paciente:</label>
+                                        <select id="analytics-detail-patient">
+                                            <option value="">Selecione um paciente...</option>
+                                        </select>
+                                    </div>
+                                    <div class="filter-group">
+                                        <label for="analytics-detail-evaluation">Avaliação:</label>
+                                        <select id="analytics-detail-evaluation" disabled>
+                                            <option value="">Selecione uma avaliação...</option>
+                                        </select>
+                                    </div>
+                                    <div class="detail-actions">
+                                        <button type="button" id="analytics-export-evaluation" class="btn-secondary" disabled>
+                                            💾 Exportar avaliação
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="analytics-evaluation-detail" class="analytics-evaluation-detail">
+                                <div class="analytics-empty">
+                                    <h4>Nenhuma avaliação selecionada</h4>
+                                    <p>Selecione um paciente e uma avaliação para visualizar todas as respostas do questionário.</p>
                                 </div>
                             </div>
                         </div>
@@ -496,13 +526,24 @@
                     if (navTarget) {
                         navTarget.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                     }
+                    const focusTarget = button.getAttribute('data-focus-target');
+                    if (focusTarget) {
+                        requestAnimationFrame(() => {
+                            const focusElement = document.querySelector(focusTarget);
+                            if (focusElement) {
+                                focusElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                focusElement.classList.add('is-highlighted');
+                                setTimeout(() => focusElement.classList.remove('is-highlighted'), 1100);
+                            }
+                        });
+                    }
                 });
             });
         });
     </script>
 
     <!-- Script melhorado com verificação de conexão e backup -->
-    <script src="script-terapeuta-melhorado.js?v=3.0"></script>
+    <script type="module" src="script-terapeuta-melhorado.js?v=3.0"></script>
 
     <!-- Sistema de Relatórios -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
