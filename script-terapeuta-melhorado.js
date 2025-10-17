@@ -1539,11 +1539,11 @@ class TerapeutaPanelMelhorado {
                         <span class="control-label">Filtrar por pontuação</span>
                         <div class="pdi-score-options">
                             <label>
-                                <input type="checkbox" name="pdi-score" value="1" checked>
+                                <input type="checkbox" name="pdi-score" value="1">
                                 1 - Nunca ou raramente
                             </label>
                             <label>
-                                <input type="checkbox" name="pdi-score" value="2" checked>
+                                <input type="checkbox" name="pdi-score" value="2">
                                 2 - Com pouca frequência
                             </label>
                             <label>
@@ -1558,6 +1558,17 @@ class TerapeutaPanelMelhorado {
                                 <input type="checkbox" name="pdi-score" value="5">
                                 5 - Sempre ou quase sempre
                             </label>
+                        </div>
+                        <div class="pdi-quick-buttons">
+                            <button type="button" id="pdi-select-low" class="btn-secondary quick-action">
+                                ⚡ Selecionar Baixas (1, 2, 3)
+                            </button>
+                            <button type="button" id="pdi-select-all-groups" class="btn-secondary quick-action">
+                                📚 Selecionar Todos os Grupos
+                            </button>
+                            <button type="button" id="pdi-clear-filters" class="btn-secondary quick-action">
+                                🧹 Limpar Filtros
+                            </button>
                         </div>
                     </div>
                     <div class="pdi-control">
@@ -1597,6 +1608,9 @@ class TerapeutaPanelMelhorado {
         const generateButton = detailContainer.querySelector('#pdi-generate');
         const exportButton = detailContainer.querySelector('#pdi-export');
         const resultsContainer = detailContainer.querySelector('#pdi-results');
+        const quickLowButton = detailContainer.querySelector('#pdi-select-low');
+        const quickAllGroupsButton = detailContainer.querySelector('#pdi-select-all-groups');
+        const clearFiltersButton = detailContainer.querySelector('#pdi-clear-filters');
 
         this.currentPdiEvaluation = evaluation;
         this.currentPdiResults = [];
@@ -1606,7 +1620,10 @@ class TerapeutaPanelMelhorado {
             subgroupSelect,
             generateButton,
             exportButton,
-            resultsContainer
+            resultsContainer,
+            quickLowButton,
+            quickAllGroupsButton,
+            clearFiltersButton
         };
 
         if (groupSelect) {
@@ -1649,6 +1666,36 @@ class TerapeutaPanelMelhorado {
             });
         }
 
+        if (quickLowButton) {
+            quickLowButton.addEventListener('click', () => {
+                this.applyPdiQuickLowScores();
+                regenerate();
+            });
+        }
+
+        if (quickAllGroupsButton) {
+            quickAllGroupsButton.addEventListener('click', () => {
+                this.applyPdiSelectAllGroups();
+                regenerate();
+            });
+        }
+
+        if (clearFiltersButton) {
+            clearFiltersButton.addEventListener('click', () => {
+                this.clearPdiFilters();
+                if (exportButton) {
+                    exportButton.disabled = true;
+                }
+                resultsContainer.innerHTML = `
+                    <div class="analytics-empty">
+                        <h4>Filtros limpos</h4>
+                        <p>Selecione as combinações desejadas e clique em "Gerar PDI".</p>
+                    </div>
+                `;
+            });
+        }
+
+        this.applyPdiDefaultFilters();
         regenerate();
     }
 
@@ -1700,6 +1747,74 @@ class TerapeutaPanelMelhorado {
     getSelectedOptions(selectElement) {
         if (!selectElement) return [];
         return Array.from(selectElement.selectedOptions || []).map(option => option.value);
+    }
+
+    applyPdiDefaultFilters() {
+        if (!this.pdiControls) return;
+        const { scoreInputs, groupSelect, subgroupSelect } = this.pdiControls;
+
+        if (scoreInputs && scoreInputs.length) {
+            scoreInputs.forEach(cb => {
+                cb.checked = ['1', '2', '3'].includes(cb.value);
+            });
+        }
+
+        if (groupSelect) {
+            Array.from(groupSelect.options).forEach(option => {
+                option.selected = true;
+            });
+            this.populatePdiSubgroupOptions(subgroupSelect, this.getSelectedOptions(groupSelect));
+            if (subgroupSelect) {
+                Array.from(subgroupSelect.options).forEach(option => option.selected = false);
+            }
+        }
+    }
+
+    applyPdiQuickLowScores() {
+        if (!this.pdiControls) return;
+        const { scoreInputs } = this.pdiControls;
+        if (!scoreInputs) return;
+        scoreInputs.forEach(cb => {
+            cb.checked = ['1', '2', '3'].includes(cb.value);
+        });
+        this.showNotification('Pontuações 1, 2 e 3 selecionadas.', 'success');
+    }
+
+    applyPdiSelectAllGroups() {
+        if (!this.pdiControls) return;
+        const { groupSelect, subgroupSelect } = this.pdiControls;
+        if (!groupSelect) return;
+        Array.from(groupSelect.options).forEach(option => {
+            option.selected = true;
+        });
+        this.populatePdiSubgroupOptions(subgroupSelect, this.getSelectedOptions(groupSelect));
+        if (subgroupSelect) {
+            Array.from(subgroupSelect.options).forEach(option => option.selected = false);
+        }
+        this.showNotification('Todos os grupos foram selecionados.', 'success');
+    }
+
+    clearPdiFilters() {
+        if (!this.pdiControls) return;
+        const { scoreInputs, groupSelect, subgroupSelect } = this.pdiControls;
+
+        if (scoreInputs) {
+            scoreInputs.forEach(cb => cb.checked = false);
+        }
+
+        if (groupSelect) {
+            Array.from(groupSelect.options).forEach(option => option.selected = false);
+        }
+
+        if (subgroupSelect) {
+            subgroupSelect.innerHTML = '';
+            subgroupSelect.disabled = true;
+        }
+
+        this.currentPdiResults = [];
+        this.currentPdiEvaluation = null;
+
+        this.showNotification('Filtros do PDI limpos. Configure novamente para gerar o plano.', 'info');
     }
 
     generatePdiPlan(evaluation) {

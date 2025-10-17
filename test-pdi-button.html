@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Botão PDI</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: 20px auto;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+        }
+        button:hover {
+            transform: scale(1.05);
+        }
+        #log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🧪 Teste do Botão Gerar PDI</h1>
+        <p>Este é um teste isolado para verificar se o botão está funcionando.</p>
+
+        <button onclick="testButtonClick()">
+            📋 Teste 1: Botão Simples
+        </button>
+
+        <button onclick="testReportsManager()">
+            📋 Teste 2: Via ReportsManager
+        </button>
+
+        <button onclick="testFullPDI()">
+            📋 Teste 3: PDI Completo
+        </button>
+
+        <button onclick="clearLog()">
+            🗑️ Limpar Log
+        </button>
+
+        <div id="log"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyD_fkKU3N61u3HxKklIbdAMK2qUAPDVHhQ",
+            authDomain: "avaliacao-habilidades-2024.firebaseapp.com",
+            projectId: "avaliacao-habilidades-2024",
+            storageBucket: "avaliacao-habilidades-2024.firebasestorage.app",
+            messagingSenderId: "1026943873619",
+            appId: "1:1026943873619:web:50276ae57af2e3a9ea0ca6",
+            measurementId: "G-3LNVBBET4E"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.firebase = { app, db, auth, initialized: false };
+
+        async function init() {
+            try {
+                await signInAnonymously(auth);
+                window.firebase.initialized = true;
+                log('✅ Firebase inicializado', 'success');
+            } catch (error) {
+                log('❌ Erro Firebase: ' + error.message, 'error');
+            }
+        }
+
+        init();
+    </script>
+
+    <!-- Carregar Scripts -->
+    <script>
+        const timestamp = new Date().getTime();
+
+        function loadScript(src, callback) {
+            const script = document.createElement('script');
+            script.src = src + '?t=' + timestamp;
+            script.onload = callback;
+            script.onerror = () => log('❌ Erro ao carregar: ' + src, 'error');
+            document.head.appendChild(script);
+        }
+
+        // Carregar scripts em sequência
+        loadScript('script-terapeuta-melhorado.js', () => {
+            log('✅ script-terapeuta-melhorado.js carregado', 'success');
+
+            loadScript('reports-manager.js', () => {
+                log('✅ reports-manager.js carregado', 'success');
+
+                // Aguardar inicialização
+                setTimeout(() => {
+                    if (window.reportsManager) {
+                        log('✅ window.reportsManager disponível', 'success');
+                    } else if (window.ReportsManager) {
+                        log('ℹ️ Criando instância do ReportsManager...', 'info');
+                        window.reportsManager = new window.ReportsManager();
+                        log('✅ window.reportsManager criado', 'success');
+                    } else {
+                        log('❌ ReportsManager não encontrado', 'error');
+                    }
+                }, 1000);
+            });
+        });
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.style.color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function testButtonClick() {
+            log('🔘 Botão clicado!', 'info');
+            alert('Botão funcionando!');
+        }
+
+        function testReportsManager() {
+            log('🔍 Verificando window.reportsManager...', 'info');
+
+            if (!window.reportsManager) {
+                log('❌ window.reportsManager não existe', 'error');
+                alert('Erro: window.reportsManager não encontrado!');
+                return;
+            }
+
+            log('✅ window.reportsManager encontrado', 'success');
+
+            if (typeof window.reportsManager.generatePDI !== 'function') {
+                log('❌ generatePDI não é uma função', 'error');
+                alert('Erro: generatePDI não é uma função!');
+                return;
+            }
+
+            log('✅ generatePDI é uma função', 'success');
+            alert('ReportsManager está OK!');
+        }
+
+        async function testFullPDI() {
+            log('🚀 Testando PDI completo...', 'info');
+
+            if (!window.terapeutaPanel) {
+                log('❌ terapeutaPanel não encontrado', 'error');
+                alert('Erro: terapeutaPanel não encontrado! Aguarde o carregamento completo.');
+                return;
+            }
+
+            log('✅ terapeutaPanel encontrado', 'success');
+
+            try {
+                log('📊 Carregando avaliações...', 'info');
+                const evaluations = await window.terapeutaPanel.firebaseManager.getAllEvaluations();
+                log(`✅ ${evaluations.length} avaliações carregadas`, 'success');
+
+                if (evaluations.length === 0) {
+                    log('⚠️ Nenhuma avaliação encontrada', 'warning');
+                    alert('Nenhuma avaliação encontrada no banco de dados');
+                    return;
+                }
+
+                log('🔄 Abrindo gerador de PDI...', 'info');
+                window.terapeutaPanel.generatePDI(evaluations[0].id);
+                log('✅ PDI aberto!', 'success');
+
+            } catch (error) {
+                log('❌ Erro: ' + error.message, 'error');
+                console.error(error);
+                alert('Erro: ' + error.message);
+            }
+        }
+
+        // Log inicial
+        log('🔄 Página carregada, aguardando scripts...', 'info');
+    </script>
+</body>
+</html>

@@ -1851,12 +1851,15 @@ class ReportsManager {
                 border-left: 4px solid #667eea;
             ">
                 <h3 style="margin-top: 0; color: #667eea;">ℹ️ Como usar o gerador de PDI</h3>
-                <p style="margin: 10px 0;">
-                    <strong>1.</strong> Selecione as <strong>pontuações</strong> que deseja trabalhar (ex: notas 1, 2 e 3)<br>
-                    <strong>2.</strong> Selecione os <strong>grupos</strong> e/ou <strong>subgrupos</strong> de habilidades<br>
-                    <strong>3.</strong> Clique em <strong>"Gerar PDI"</strong> para visualizar as questões selecionadas<br>
-                    <strong>4.</strong> Exporte o PDI em PDF para impressão ou compartilhamento
+                <p style="margin: 10px 0; line-height: 1.6;">
+                    <strong>Passo 1:</strong> Use o botão <strong style="color: #28a745;">"⚡ Selecionar Baixas (1,2,3)"</strong> para marcar as pontuações mais críticas<br>
+                    <strong>Passo 2:</strong> Use o botão <strong style="color: #17a2b8;">"📚 Selecionar Todos os Grupos"</strong> ou escolha grupos específicos<br>
+                    <strong>Passo 3:</strong> Clique em <strong style="color: #667eea;">"📋 Gerar PDI"</strong> para visualizar as questões filtradas<br>
+                    <strong>Passo 4:</strong> Preencha as estratégias de intervenção e exporte em PDF
                 </p>
+                <div style="background: #fff3cd; padding: 10px; border-radius: 5px; margin-top: 15px;">
+                    <strong>💡 Dica Rápida:</strong> Clique nos dois primeiros botões e depois em "Gerar PDI" para começar!
+                </div>
             </div>
 
             <!-- Filtros de PDI -->
@@ -1951,7 +1954,33 @@ class ReportsManager {
                 </div>
 
                 <!-- Botões de Ação -->
-                <div style="display: flex; gap: 10px; margin-top: 25px;">
+                <div style="display: flex; gap: 10px; margin-top: 25px; flex-wrap: wrap;">
+                    <button onclick="window.reportsManager.selectAllLowScores()" style="
+                        background: #28a745;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: transform 0.2s;
+                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        ⚡ Selecionar Baixas (1,2,3)
+                    </button>
+                    <button onclick="window.reportsManager.selectAllGroups()" style="
+                        background: #17a2b8;
+                        color: white;
+                        border: none;
+                        padding: 12px 24px;
+                        border-radius: 8px;
+                        font-size: 16px;
+                        font-weight: bold;
+                        cursor: pointer;
+                        transition: transform 0.2s;
+                    " onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                        📚 Selecionar Todos os Grupos
+                    </button>
                     <button onclick="window.reportsManager.generatePDI()" style="
                         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
                         color: white;
@@ -1975,17 +2004,6 @@ class ReportsManager {
                         cursor: pointer;
                     ">
                         🗑️ Limpar Filtros
-                    </button>
-                    <button onclick="window.reportsManager.selectAllLowScores()" style="
-                        background: #28a745;
-                        color: white;
-                        border: none;
-                        padding: 12px 24px;
-                        border-radius: 8px;
-                        font-size: 16px;
-                        cursor: pointer;
-                    ">
-                        ⚡ Selecionar Baixas (1,2,3)
                     </button>
                 </div>
             </div>
@@ -2055,6 +2073,15 @@ class ReportsManager {
         this.showNotification('Pontuações baixas (1, 2, 3) selecionadas', 'success');
     }
 
+    selectAllGroups() {
+        // Selecionar todos os grupos
+        document.querySelectorAll('.pdi-group-filter').forEach(cb => {
+            cb.checked = true;
+        });
+        this.updatePDISubgroupFilters();
+        this.showNotification('Todos os grupos selecionados', 'success');
+    }
+
     clearPDIFilters() {
         document.querySelectorAll('.pdi-score-filter, .pdi-group-filter, .pdi-subgroup-filter').forEach(cb => {
             cb.checked = false;
@@ -2065,29 +2092,75 @@ class ReportsManager {
     }
 
     generatePDI() {
+        console.log('📋 generatePDI() chamado!');
+
         const modal = document.getElementById('pdi-generator-modal');
+        if (!modal) {
+            console.error('❌ Modal não encontrado!');
+            alert('Erro: Modal do PDI não encontrado');
+            return;
+        }
+
+        console.log('✅ Modal encontrado:', modal);
+
+        if (!modal.dataset.evaluationData) {
+            console.error('❌ Dados da avaliação não encontrados no modal!');
+            alert('Erro: Dados da avaliação não encontrados');
+            return;
+        }
+
         const evaluationData = JSON.parse(modal.dataset.evaluationData);
+        console.log('✅ Dados da avaliação:', evaluationData);
 
         // Obter filtros selecionados
         const selectedScores = Array.from(document.querySelectorAll('.pdi-score-filter:checked'))
             .map(cb => parseInt(cb.value));
+        console.log('📊 Pontuações selecionadas:', selectedScores);
 
         const selectedGroups = Array.from(document.querySelectorAll('.pdi-group-filter:checked'))
             .map(cb => cb.value);
+        console.log('📚 Grupos selecionados:', selectedGroups);
 
         const selectedSubgroups = Array.from(document.querySelectorAll('.pdi-subgroup-filter:checked'))
             .map(cb => cb.value);
+        console.log('🎯 Subgrupos selecionados:', selectedSubgroups);
 
         // Validações
         if (selectedScores.length === 0) {
-            this.showNotification('Selecione pelo menos uma pontuação', 'error');
+            console.warn('⚠️ Nenhuma pontuação selecionada');
+            this.showNotification('❌ Por favor, selecione pelo menos uma pontuação (1-5)', 'error');
+            // Destacar seção de pontuações
+            const scoresSection = document.querySelector('.pdi-score-filter')?.closest('div[style*="margin-bottom: 25px"]');
+            if (scoresSection) {
+                scoresSection.style.border = '3px solid #dc3545';
+                scoresSection.style.borderRadius = '8px';
+                scoresSection.style.padding = '15px';
+                setTimeout(() => {
+                    scoresSection.style.border = '';
+                    scoresSection.style.padding = '';
+                }, 3000);
+            }
             return;
         }
 
         if (selectedGroups.length === 0 && selectedSubgroups.length === 0) {
-            this.showNotification('Selecione pelo menos um grupo ou subgrupo', 'error');
+            console.warn('⚠️ Nenhum grupo ou subgrupo selecionado');
+            this.showNotification('❌ Por favor, selecione pelo menos um grupo ou subgrupo', 'error');
+            // Destacar seção de grupos
+            const groupsSection = document.querySelector('.pdi-group-filter')?.closest('div[style*="margin-bottom: 25px"]');
+            if (groupsSection) {
+                groupsSection.style.border = '3px solid #dc3545';
+                groupsSection.style.borderRadius = '8px';
+                groupsSection.style.padding = '15px';
+                setTimeout(() => {
+                    groupsSection.style.border = '';
+                    groupsSection.style.padding = '';
+                }, 3000);
+            }
             return;
         }
+
+        console.log('✅ Validações OK, filtrando questões...');
 
         // Filtrar questões
         const filteredQuestions = this.filterQuestionsForPDI(
@@ -2097,8 +2170,12 @@ class ReportsManager {
             selectedSubgroups
         );
 
+        console.log('📋 Questões filtradas:', filteredQuestions.length);
+
         // Mostrar resultado
         this.displayPDIResult(evaluationData, filteredQuestions, selectedScores, selectedGroups, selectedSubgroups);
+
+        console.log('✅ PDI gerado com sucesso!');
     }
 
     filterQuestionsForPDI(evaluation, selectedScores, selectedGroups, selectedSubgroups) {

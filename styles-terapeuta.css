@@ -542,6 +542,33 @@
     gap: 8px;
 }
 
+.pdi-quick-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.pdi-quick-buttons .quick-action {
+    background: #edf2f7;
+    border: 1px solid #cbd5f5;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: #2d3748;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.pdi-quick-buttons .quick-action:hover {
+    background: #e2e8f0;
+    transform: translateY(-1px);
+}
+
+.pdi-quick-buttons .quick-action:active {
+    transform: translateY(0);
+}
+
 .pdi-control select {
     width: 100%;
     min-height: 110px;
